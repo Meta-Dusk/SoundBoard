@@ -1,21 +1,36 @@
 import flet as ft
-import flet_audio as fa
+import random
 
-from app.containers import true_center_container, default_column
+from app.containers import default_row, default_column
+from app.audio import AudioManager, Music, SFX
+from app.buttons import square_button
 
+
+def sample_btn(
+    text: str = "Sample Button",
+    on_click: ft.OptionalControlEventCallable = None
+):
+    return ft.ElevatedButton(
+        text=text,
+        on_click=on_click,
+        adaptive=True, expand=True,
+        width=50, height=50
+    )
 
 def main(page: ft.Page):
-    audio_test = fa.Audio(src="assets/sfx/fn.mp3")
+    audio = AudioManager(page)
     
-    test_txt = ft.Text("This is an app with background audio.")
-    test_btn = ft.ElevatedButton("Play SFX", on_click=lambda _: audio_test.play())
+    def play_random_sfx(e):
+        audio.play_sfx(random.choice(list(SFX)))
+        
+    test_btn = sample_btn("Play random SFX", play_random_sfx)
     
-    form = true_center_container(default_column([
-        test_txt,
-        test_btn
-    ]))
+    form = [test_btn, test_btn, test_btn]
     
-    page.overlay.append(audio_test)
-    page.add(form)
+    align_form = default_column([default_row(form)])
+    
+    page.add(align_form)
 
-ft.app(main)
+
+if __name__ == "__main__":
+    ft.app(main, assets_dir="assets")
