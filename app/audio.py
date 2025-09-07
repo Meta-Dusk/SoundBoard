@@ -34,7 +34,7 @@ class SFX(Enum):
     HOLYMOLY = Sound((SFX_DIR / "holymoly.wav").resolve(), "Holy Moly 😮", "Woah")
     KUYASHI = Sound((SFX_DIR / "kuyashi.wav").resolve(), "くやし 😡", "It means frustration")
     YATTA = Sound((SFX_DIR / "yatta.wav").resolve(), "やった 😆", "It means yippe")
-    NESQUICK = Sound((SFX_DIR / "nesquick.wav").resolve(), "Nesquick", "ifykyk (1)")
+    NESQUICK = Sound((SFX_DIR / "nesquick.wav").resolve(), "Nesquick", "ifykyk")
 
 class DEFAULTS(Enum):
     AUDIO = 1.0
@@ -42,6 +42,7 @@ class DEFAULTS(Enum):
     SEEK = 3
 
 def check_audio():
+    """Checks integrity of all audio files"""
     sfx_count = 0
     music_count = 0
 

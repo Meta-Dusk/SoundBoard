@@ -7,11 +7,21 @@ from typing import Callable
 
 def master_volume_slider(
     audio: AudioManager, page: ft.Page,
-    width: ft.OptionalNumber = None, height: ft.OptionalNumber = None
+    width: ft.OptionalNumber = None, height: ft.OptionalNumber = 30
 ):
+    """
+    This component will control and update the user's saved volume settings
+    
+    Args:
+        audio (AudioManager): `AudioManager` instance
+        page (Page): `Page` instance
+        width (int | float | None): Width of the slider; if None, it will resize based on the window's width
+        height (int | float | None): Height of the slider
+        
+    Returns:
+        `Slider`: A premade master volume slider
+    """
     initial_volume = audio.settings.get("volume", 1.0)
-    # width = width if width is not None else page.window.width - 20
-    height = height if height is not None else 30
     
     def on_resized(_):
         # print(f"Window width is: {page.window.width}")
@@ -54,8 +64,22 @@ def random_music_btn(
     audio: AudioManager, loop: bool = True,
     callbacks: list[Callable[[ft.ControlEvent], None]] | None = None
 ):
+    """
+    A Button that will play a randomly selected Music in the Music Enum class
+
+    Args:
+        audio (AudioManager): `AudioManager` instance
+        loop (bool): Whether the Music will loop once finished playing
+        callbacks (list): A list of callbacks that takes a `ControlEvent` and retuns `None` if you want to add more function calls
+
+    Returns:
+        `ElevatedButton`: A premade button for playing random Music
+    """
     def play_random_music(_):
         audio.play_music(audio=random.choice(list(Music)), loop=loop)
+        
+        if callbacks is None:
+            return
         for cb in callbacks:
             cb(_)
     
@@ -87,6 +111,7 @@ def random_sfx_btn(
             snackbar_text = ft.Text(f"Playing SFX: {rnd_sfx.value.title}")
             page.open(ft.SnackBar(snackbar_text, duration=1000))
             page.update()
+            
         if callbacks is None:
             return
         for cb in callbacks:
