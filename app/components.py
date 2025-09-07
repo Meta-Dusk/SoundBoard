@@ -28,12 +28,11 @@ def master_volume_slider(audio: AudioManager, page: ft.Page):
                     pass
     
     return ft.Slider(
-        min=0,
-        max=1,
-        divisions=100,
+        min=0, max=1, divisions=100,
+        width=300, height=100,
         value=initial_volume,
         label=f"Volume: {int(initial_volume * 100)}%",
-        on_change=on_volume_change,
+        on_change=on_volume_change
     )
     
 def random_music_btn(audio: AudioManager, loop: bool = True):
