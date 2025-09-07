@@ -34,3 +34,10 @@ def true_center_container(content: ft.Control):
     ])
     
     return form
+
+def expand_x_y(controls: Sequence[ft.Control]):
+    form = default_row([
+        default_column([controls])
+    ])
+    
+    return form

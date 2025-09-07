@@ -74,6 +74,7 @@ class AudioManager:
     def __init__(self, page: ft.Page):
         self.page = page
         self.music: fa.Audio | None = None
+        self.sfx: fa.Audio | None = None
         self.settings = self._load_settings()
         self.debug: bool = True
 
@@ -96,7 +97,12 @@ class AudioManager:
         SETTINGS_FILE.write_text(json.dumps(data, indent=2))
 
     # ---------- SOUND EFFECTS ----------
-    def play_sfx(self, audio: SFX):
+    def play_sfx(self, audio: SFX, overlap: bool = True):
+        if self.sfx and not overlap:
+            self.sfx.release()
+            self.page.overlay.remove(self.sfx)
+            print("[AudioManager] Overriding SFX")
+        
         def on_state_changed(e):
             if (self.debug):
                 print(f"SFX State: {audio.value.title} -> {e.data}")
@@ -107,14 +113,14 @@ class AudioManager:
             if (self.debug):
                 print(f"SFX Loaded: {audio.value.title}")
         
-        sfx = fa.Audio(
+        self.sfx = fa.Audio(
             src=str(audio.value.str_path),
             autoplay=True,
             volume=self.settings.get("volume", 1.0),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
         )
-        self.page.overlay.append(sfx)
+        self.page.overlay.append(self.sfx)
         self.page.update()
 
     def _cleanup_sfx(self, sfx: fa.Audio):
@@ -129,7 +135,7 @@ class AudioManager:
         if self.music:
             self.music.release()
             self.page.overlay.remove(self.music)
-            print("[AudioManager] Overriding music")
+            print("[AudioManager] Overriding Music")
             
         def on_loaded(e):
             if (self.debug):
@@ -168,6 +174,10 @@ class AudioManager:
             self.page.overlay.remove(self.music)
             self.music = None
             self.page.update()
+            
+    def stop_all(self):
+        self.stop_music()
+        self._cleanup_sfx()
 
     # ---------- GENERAL ----------
     def _perceptual_volume(self, ui_volume: float) -> float:
@@ -204,14 +214,12 @@ py -m app.audio
 import random
 
 from .containers import true_center_container, default_column
+from .styles import base_page
 
 
 def test(page: ft.Page):
     audio = AudioManager(page)
-    
-    def _scaled_volume(ui_v: float) -> float:
-        v = max(0.0001, min(1.0, ui_v))
-        return math.pow(v, 2.0)
+    base_page(page)
     
     def on_volume_change(e: ft.ControlEvent):
         v = e.control.value
@@ -222,7 +230,7 @@ def test(page: ft.Page):
         e.control.update()
 
         # update any active audio controls in page.overlay (SFX etc.)
-        scaled = _scaled_volume(v)
+        scaled = audio._perceptual_volume(v)
         for ctrl in list(page.overlay):
         # many overlay items aren't audio controls; be defensive
             if hasattr(ctrl, "volume"):

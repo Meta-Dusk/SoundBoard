@@ -1,9 +1,10 @@
 import flet as ft
-import random
 
-from app.containers import default_row, default_column
+from app.containers import default_row, default_column, default_container, true_center_container
 from app.audio import AudioManager, Music, SFX
 from app.buttons import square_button
+from app.styles import mobile_view
+from app.components import random_music_btn, random_sfx_btn
 
 
 def sample_btn(
@@ -17,17 +18,41 @@ def sample_btn(
         width=50, height=50
     )
 
+
 def main(page: ft.Page):
+    dev_mode: bool = True
+    landscape: bool = False
+    
+    mobile_view(page, landscape)
     audio = AudioManager(page)
     
-    def play_random_sfx(e):
-        audio.play_sfx(random.choice(list(SFX)))
+    def rotate_phone(e):
+        nonlocal landscape
         
-    test_btn = sample_btn("Play random SFX", play_random_sfx)
+        landscape = not landscape
+        mobile_view(page, landscape)
+        page.update()
+        
+    mobile_dev_btn = sample_btn("Rotate Phone", rotate_phone)
     
-    form = [test_btn, test_btn, test_btn]
+    form: ft.Control
+    form_controls = default_row([
+        random_sfx_btn(audio), random_music_btn(audio)
+    ])
     
-    align_form = default_column([default_row(form)])
+    if (page.platform == ft.PagePlatform.WINDOWS and dev_mode):
+        dev_buttons = ft.Container(default_row([
+            mobile_dev_btn
+        ]))
+        dev_form = default_column([
+            dev_buttons,
+            form_controls
+        ])
+        form = dev_form
+    else:
+        form = form_controls
+    
+    align_form = true_center_container(form)
     
     page.add(align_form)
 
