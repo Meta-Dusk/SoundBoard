@@ -7,3 +7,4 @@ app/settings.json
 
 # Build
 build/
+print_files.py

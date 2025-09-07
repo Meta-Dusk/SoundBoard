@@ -1,0 +1,11 @@
+[project]
+name = "SeBoard"
+version = "1.0.0"
+dependencies = [
+    "flet>=0.28.3",
+    "flet_audio>=0.1.0",
+]
+
+[tool.flet]
+min_sdk_version = 21  # Supports Android 5.0+ (including 13 and 15)
+target_sdk_version = 33  # Android 13 (use 35 for Android 15 if needed)

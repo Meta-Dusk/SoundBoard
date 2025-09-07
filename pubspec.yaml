@@ -1,0 +1,16 @@
+name: SeBoard
+description: A Flet Sound Board App Made Especially For Sebastian
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flet: ^0.28.3
+  flet_audio: ^0.1.0
+
+flutter:
+  assets:
+    - assets/
