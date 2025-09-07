@@ -4,8 +4,13 @@ import flet as ft
 from .audio import AudioManager, Music, SFX
 
 
-def master_volume_slider(audio: AudioManager, page: ft.Page):
+def master_volume_slider(
+    audio: AudioManager, page: ft.Page,
+    width: ft.OptionalNumber = None, height: ft.OptionalNumber = None
+):
     initial_volume = audio.settings.get("volume", 1.0)
+    width = width if width is not None else page.window.width - 20
+    height = height if height is not None else 30
     
     def on_volume_change(e: ft.ControlEvent):
         v = e.control.value
@@ -29,7 +34,7 @@ def master_volume_slider(audio: AudioManager, page: ft.Page):
     
     return ft.Slider(
         min=0, max=1, divisions=100,
-        width=300, height=100,
+        width=width, height=height,
         value=initial_volume,
         label=f"Volume: {int(initial_volume * 100)}%",
         on_change=on_volume_change
