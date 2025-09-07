@@ -3,20 +3,20 @@ import flet as ft
 from typing import Sequence
 
 
-def default_column(controls: Sequence[ft.Control]):
+def default_column(controls: Sequence[ft.Control], expand: bool = True):
     return ft.Column(
         controls=controls,
         alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        expand=True, adaptive=True
+        expand=expand, adaptive=True
     )
     
-def default_row(controls: Sequence[ft.Control]):
+def default_row(controls: Sequence[ft.Control], expand: bool = True):
     return ft.Row(
         controls=controls,
         alignment=ft.MainAxisAlignment.CENTER,
         vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        expand=True, adaptive=True
+        expand=expand, adaptive=True
     )
     
 def default_container(content: ft.Control):

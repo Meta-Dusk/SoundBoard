@@ -151,6 +151,7 @@ class AudioManager:
 
         self.music = fa.Audio(
             src=str(audio.value.str_path),
+            data=audio.value,
             autoplay=True,
             volume=self.settings.get("volume", DEFAULTS.AUDIO.value),
             on_loaded=on_loaded,
@@ -174,6 +175,7 @@ class AudioManager:
             self.page.overlay.remove(self.music)
             self.music = None
             self.page.update()
+            print("[AudioManager] Stopping music")
             
     def stop_all(self):
         self.stop_music()
