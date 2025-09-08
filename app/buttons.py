@@ -2,9 +2,8 @@ import flet as ft
 
 
 def square_button(
-    text: str = "Square Button",
-    on_click: ft.OptionalControlEventCallable = None,
-    expand: bool = False
+    text: str = "Square Button", expand: bool = False,
+    on_click: ft.OptionalControlEventCallable = None
 ):
     return ft.ElevatedButton(
         text=text,
@@ -13,3 +12,13 @@ def square_button(
         on_click=on_click,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
     )
+    
+def toggle_button_classic(
+    text: str = "Toggle Button", expand: bool = False,
+    on_click: ft.OptionalControlEventCallable = None
+) -> ft.TextButton:
+    
+    text_btn = ft.TextButton(
+        text=text, expand=expand, on_click=on_click
+    )
+    return text_btn

@@ -4,6 +4,7 @@ import flet as ft
 def base_page(page: ft.Page):
     page.title = "SeBoard"
     page.adaptive = True
+    page.scroll = ft.ScrollMode.AUTO
     page.window.center()
 
 def mobile_view(page: ft.Page, landscape: bool = False):
