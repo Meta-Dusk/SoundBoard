@@ -6,69 +6,106 @@ import flet_audio as fa
 from pathlib import Path
 from enum import Enum
 from dataclasses import dataclass
+from typing import Tuple, List
 
 
-SFX_DIR = Path("assets") / "sfx"
-MUSIC_DIR = Path("assets") / "music"
-SETTINGS_FILE = Path("app") / "settings.json"
+class PATHS(Enum):
+    SFX_DIR = Path("assets") / "sfx"
+    MUSIC_DIR = Path("assets") / "music"
+    SETTINGS_FILE = Path("app") / "settings.json"
 
 @dataclass
 class Sound:
     str_path: str
-    title: str
+    title: str = "Unknown"
     description: str = "No description"
+    explicit: bool = False
 
-# 🎵 Music
-class Music(Enum):
-    PATRIOT = Sound((MUSIC_DIR / "patriot.mp3").resolve(), "Feofilov - Patriot", "prod. DJ PIČKA x DJ PEDOPHILE feat. DJ CIGAN")
-    NECKHURTS = Sound((MUSIC_DIR / "neckhurts.mp3").resolve(), "Neckhurts (Tiktok remix bass boosted)", "Perfect club music")
-    PATAPIM = Sound((MUSIC_DIR / "patapim.mp3").resolve(), "Brr Brr Patapim Alarm😴⏰", "A perfect alarm to wake up to")
 
-# 🔊 Sound Effects
-class SFX(Enum):
-    FN = Sound((SFX_DIR / "fn.wav").resolve(), "Puck Higgens", "ifykyk")
-    ANEURYSM = Sound((SFX_DIR / "aneurysm.wav").resolve(), "Brain Aneurysm", "Yep")
-    AMONGUS = Sound((SFX_DIR / "amongus.wav").resolve(), "Amongus", "It's just a dude shouting amongus")
-    CATLAUGH = Sound((SFX_DIR / "catlaugh.wav").resolve(), "Cat Laugh (Loud)", "A cat laughing at you at your expense")
-    GOOFYHORN = Sound((SFX_DIR / "goofyhorn.wav").resolve(), "Goofy Car Horn", "Goofy ahh horn... Use responsibly")
-    HOLYMOLY = Sound((SFX_DIR / "holymoly.wav").resolve(), "Holy Moly 😮", "Woah")
-    KUYASHI = Sound((SFX_DIR / "kuyashi.wav").resolve(), "くやし 😡", "It means frustration")
-    YATTA = Sound((SFX_DIR / "yatta.wav").resolve(), "やった 😆", "It means yippe")
-    NESQUICK = Sound((SFX_DIR / "nesquick.wav").resolve(), "Nesquick", "ifykyk")
+# Helper functions
+def resolve_path(file_name: str) -> Path:
+    name = file_name.split(".")
+    file_extension = name[1]
+    
+    if (file_extension == "wav"):
+        return (PATHS.SFX_DIR.value / file_name).resolve()
+    elif (file_extension == "mp3"):
+        return (PATHS.MUSIC_DIR.value / file_name).resolve()
+    else:
+        raise ValueError("Invalid file type. Currently supported ones are .wav and .mp3")
 
-class DEFAULTS(Enum):
-    AUDIO = 1.0
-    BALANCE = 0.0
-    SEEK = 3
+def generate_non_explicits() -> Tuple[List[Sound], List[Sound]]:
+    """Generates lists of `Audio` excluding those tagged as explicit"""
+    safe_sfx = []
+    safe_music = []
+    
+    for sfx in SFX:
+        if (not sfx.value.explicit):
+            safe_sfx.append(sfx)
+    for music in Music:
+        if (not music.value.explicit):
+            safe_music.append(music)
+    
+    return safe_sfx, safe_music
 
 def check_audio():
     """Checks integrity of all audio files"""
     sfx_count = 0
     music_count = 0
 
-    print("Checking registered SFX...\n")
+    print("\nChecking registered SFX...")
     for sfx in SFX:
         if Path(sfx.value.str_path).exists():
             print(f"{sfx.name}: {sfx.value.str_path}")
             sfx_count += 1
         else:
             print(f"SFX {sfx.name} does not exist at {sfx.value.str_path}!")
-    print(f"Found {sfx_count}/{len(SFX)} SFX\n")
+    print(f"Found {sfx_count}/{len(SFX)} SFX files\n")
 
-    print("Checking registered Music...\n")
+    print("\nChecking registered Music...")
     for music in Music:
         if Path(music.value.str_path).exists():
             print(f"{music.name}: {music.value.str_path}")
             music_count += 1
         else:
             print(f"Music {music.name} does not exist at {music.value.str_path}!")
-    print(f"Found {music_count}/{len(Music)} Music\n")
+    print(f"Found {music_count}/{len(Music)} Music files\n")
 
     if sfx_count == len(SFX) and music_count == len(Music):
-        print("✅ All sound files are fully registered!\n")
+        print("[AudioManager] ✅ All sound files are fully registered!\n")
     else:
-        print("⚠️ Some files are missing.\n")
+        print("[AudioManager] ⚠️ Some files are missing.\n")
 
+
+# 🎵 Music
+class Music(Enum):
+    PATRIOT = Sound(resolve_path("patriot.mp3"), "Feofilov - Patriot", "prod. DJ PIČKA x DJ PEDOPHILE feat. DJ CIGAN", explicit=True)
+    NECKHURTS = Sound(resolve_path("neckhurts.mp3"), "Neckhurts (Tiktok remix bass boosted)", "Perfect club music", explicit=True)
+    PATAPIM = Sound(resolve_path("patapim.mp3"), "Brr Brr Patapim Alarm😴⏰", "A perfect alarm to wake up to")
+
+
+# 🔊 Sound Effects
+class SFX(Enum):
+    FN = Sound(resolve_path("fn.wav"), "Puck Higgens", "ifykyk", explicit=True)
+    ANEURYSM = Sound(resolve_path("aneurysm.wav"), "Brain Aneurysm", "Yep")
+    AMONGUS = Sound(resolve_path("amongus.wav"), "Amongus", "It's just a dude shouting amongus")
+    CATLAUGH = Sound(resolve_path("catlaugh.wav"), "Cat Laugh (Loud)", "A cat laughing at you at your expense")
+    GOOFYHORN = Sound(resolve_path("goofyhorn.wav"), "Goofy Car Horn", "Goofy ahh horn... Use responsibly")
+    HOLYMOLY = Sound(resolve_path("holymoly.wav"), "Holy Moly 😮", "Woah")
+    KUYASHI = Sound(resolve_path("kuyashi.wav"), "くやし 😡", "It means frustration")
+    YATTA = Sound(resolve_path("yatta.wav"), "やった 😆", "It means yippe")
+    NESQUICK = Sound(resolve_path("nesquick.wav"), "Nesquick", "ifykyk", explicit=True)
+    CRAZY = Sound(resolve_path("crazy.wav"), "Dressed Like...", "Acting like an angel dressed like?")
+    DANCE = Sound(resolve_path("dance_when_party.wav"), "I Like to Dance when I Party", "Who the hell is Saki?")
+    MUSTARD = Sound(resolve_path("mustard.wav"), "MUSTAAAAAAARD", "Mustard is a condiment made from the seeds of a mustard plant")
+    WHIPLASH = Sound(resolve_path("whiplash.wav"), "One Look...", "Give 'em whiplash")
+
+class DEFAULTS(Enum):
+    VOLUME = 0.5
+    BALANCE = 0.0
+    SEEK = 3.0
+
+# Mandatory check
 check_audio()
 
 class AudioManager:
@@ -81,10 +118,10 @@ class AudioManager:
 
     # ---------- SETTINGS ----------
     def _load_settings(self) -> dict:
-        default_settings = {"volume": 1.0}
-        if SETTINGS_FILE.exists():
+        default_settings = self._get_default_settings()
+        if PATHS.SETTINGS_FILE.value.exists():
             try:
-                return json.loads(SETTINGS_FILE.read_text())
+                return json.loads(PATHS.SETTINGS_FILE.value.read_text())
             except Exception:
                 self._save_settings(default_settings)
                 return default_settings
@@ -94,8 +131,15 @@ class AudioManager:
 
     def _save_settings(self, settings: dict | None = None):
         data = settings if settings is not None else self.settings
-        SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        SETTINGS_FILE.write_text(json.dumps(data, indent=2))
+        PATHS.SETTINGS_FILE.value.parent.mkdir(parents=True, exist_ok=True)
+        PATHS.SETTINGS_FILE.value.write_text(json.dumps(data, indent=2))
+        
+    # ---------- SETTINGS GETTERS ----------
+    def _get_settings(self, member: DEFAULTS) -> float:
+        return self.settings.get(member.name, member.value)
+    
+    def _get_default_settings(self) -> dict[str, float]:
+        return {member.name: member.value for member in DEFAULTS}
 
     # ---------- SOUND EFFECTS ----------
     def play_sfx(self, audio: SFX, overlap: bool = True):
@@ -117,7 +161,7 @@ class AudioManager:
         self.sfx = fa.Audio(
             src=str(audio.value.str_path),
             autoplay=True,
-            volume=self.settings.get("volume", 1.0),
+            volume=self._get_settings(DEFAULTS.VOLUME),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
         )
@@ -154,13 +198,12 @@ class AudioManager:
             src=str(audio.value.str_path),
             data=audio.value,
             autoplay=True,
-            volume=self.settings.get("volume", DEFAULTS.AUDIO.value),
+            volume=self._get_settings(DEFAULTS.VOLUME),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
         )
         self.page.overlay.append(self.music)
         self.page.update()
-        # self.music.play()
 
     def pause_music(self):
         if self.music:
@@ -184,9 +227,7 @@ class AudioManager:
 
     # ---------- GENERAL ----------
     def _perceptual_volume(self, ui_volume: float) -> float:
-        """
-        Convert linear UI volume (0.0-1.0) into a perceptual/logarithmic scale.
-        """
+        """Convert linear UI volume (0.0-1.0) into a perceptual/logarithmic scale."""
         ui_volume = max(0.0001, min(1.0, ui_volume))  # clamp
         return math.pow(ui_volume, 2.0)  # quadratic dropoff (natural feel)
 
@@ -205,9 +246,58 @@ class AudioManager:
         if self.music:
             self.music.volume = scaled_volume
             self.music.update()
+        if self.sfx:
+            self.sfx.volume = scaled_volume
+            self.sfx.update()
 
         if self.debug:
             print(f"[DEBUG] Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
+            
+    def set_balance(self, balance: float):
+        """Sets balance to either `Music` or `SFX`"""
+        if self.music:
+            self.music.balance = balance
+            self.music.update()
+        if self.sfx:
+            self.sfx.balance = balance
+            self.sfx.update()
+            
+        if self.debug:
+            print(f"[AudioManager] Balance set: {balance:.2f}")
+            
+    def seek(self, seek: float):
+        """Seeks music for `seek` amount of milliseconds"""
+        if self.music:
+            self.music.seek(seek)
+            if self.debug:
+                print(f"[AudioManager] Seeking music for {seek}ms")
+        else:
+            print("[AudioManager] No music to seek")
+            
+    def get_duration(self) -> int | None:
+        """Gets the duration of the current song, which can either be `int` or `None`"""
+        duration: int | None = None
+        
+        if self.music:
+            duration = self.music.get_duration()
+        if self.debug:
+            debug_msg = f"[AudioManager] Current song duration: {duration}" if duration is not None else "[AudioManager] No music playing"
+            print(debug_msg)
+            
+        return duration
+    
+    def get_position(self) -> int | None:
+        """Gets the current timestamp or position of the current song playing"""
+        position: int | None = None
+        
+        if self.music:
+            position = self.music.get_current_position()
+        if self.debug:
+            debug_msg = f"[AudioManager] Current song timestap: {position}" if position is not None else "[AudioManager] No music playing"
+            print(debug_msg)
+            
+        return position
+        
 
 '''
 Example usage with Flet

@@ -11,19 +11,6 @@ from enum import Enum
 class DEFAULT(Enum):
     MEDIA_LABEL = "No Music Playing"
     MEDIA_DESC = "Play any music for it to display here."
-    
-
-def sample_btn(
-    text: str = "Sample Button",
-    on_click: ft.OptionalControlEventCallable = None
-):
-    return ft.ElevatedButton(
-        text=text,
-        on_click=on_click,
-        adaptive=True, expand=True,
-        width=50, height=50,
-        icon=ft.Icons.STAY_CURRENT_LANDSCAPE
-    )
 
 
 def main(page: ft.Page):
@@ -99,8 +86,7 @@ def main(page: ft.Page):
     mobile_dev_btn = ft.ElevatedButton(
         text="Enter Landscape Mode",
         on_click=change_orientation,
-        adaptive=True, expand=True,
-        width=50, height=50,
+        adaptive=True, expand=True, width=50,
         icon=ft.Icons.STAY_CURRENT_LANDSCAPE
     )
     pause_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW, on_click=on_pause, disabled=True)
@@ -125,7 +111,7 @@ def main(page: ft.Page):
         default_row([pause_btn, stop_btn], expand=False)
     ])
     
-    if (page.platform == ft.PagePlatform.WINDOWS and dev_mode):
+    if (page.platform == ft.PagePlatform.WINDOWS and dev_mode): # Dev mode for Windows
         page.open(ft.SnackBar(ft.Text("Dev mode is currently on"), duration=2000))
         
         dev_buttons = ft.Container(default_row([mobile_dev_btn]))
@@ -136,7 +122,7 @@ def main(page: ft.Page):
             media_controls
         ], expand=False)
         form = dev_form
-    else:
+    else: # Default look for all platforms
         form = default_column([
             volume_controls,
             form_controls,
