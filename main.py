@@ -1,8 +1,8 @@
 import flet as ft
 
-from app.containers import default_row, default_column, true_center_container
+from app.containers import default_row, default_column, expand_x_y
 from app.audio import AudioManager
-from app.styles import mobile_view
+from app.styles import mobile_view, mobile_appbar
 from app.components import random_music_btn, random_sfx_btn, master_volume_slider, audio_duration_slider, audio_balance_slider
 from app.utilities import generate_non_explicits
 from app.buttons import toggle_button_classic
@@ -18,9 +18,8 @@ class DEFAULTS(str, Enum):
 
 
 def main(page: ft.Page):
-    dev_mode: bool = True
+    dev_mode: bool = False
     landscape: bool = False
-    
     paused: bool = False
     
     def on_pause(_):
@@ -44,6 +43,7 @@ def main(page: ft.Page):
             reset_components()
     
     mobile_view(page, landscape)
+    mobile_appbar(page)
     audio = AudioManager(page)
     # audio.debug = False
     safe: bool = audio.settings["SAFE"]
@@ -89,91 +89,86 @@ def main(page: ft.Page):
         nonlocal landscape
         landscape = not landscape
         mobile_view(page, landscape)
-        mobile_dev_btn.text = "Enter Landscape Mode" if not landscape else "Enter Portrait Mode"
-        mobile_dev_btn.icon = ft.Icons.STAY_CURRENT_LANDSCAPE if not landscape else ft.Icons.STAY_CURRENT_PORTRAIT
         page.update()
+        mobile_dev_btn.icon = ft.Icons.STAY_CURRENT_LANDSCAPE if not landscape else ft.Icons.STAY_CURRENT_PORTRAIT
         mobile_dev_btn.update()
+        page.appbar.update()
     
-    def toggle_explicit_content(_):
+    def toggle_explicit_content(e: ft.ControlEvent):
         audio.settings["SAFE"] = not audio.settings["SAFE"]
         safe: bool = audio.settings["SAFE"]
         print(f"Toggled explicit content to {safe}")
         
-        explicit_toggle_btn.text = DEFAULTS.EXPLICIT_OFF.value if not safe else DEFAULTS.EXPLICIT_ON.value
-            
+        popup_menu_item: ft.PopupMenuItem = e.control
+        popup_menu_item.text = DEFAULTS.EXPLICIT_OFF.value if not safe else DEFAULTS.EXPLICIT_ON.value
+        popup_menu_item.badge = None
+        popup_menu_item.update()
+        
         audio._save_settings()
-        explicit_toggle_btn.update()
     
     page.on_resized = on_resized
     page.auto_scroll = True
     
     media_label = ft.Text(DEFAULTS.MEDIA_LABEL.value, size=20, color=ft.Colors.PRIMARY)
     media_desc = ft.Text(DEFAULTS.MEDIA_DESC.value, size=14, color=ft.Colors.SECONDARY)
-    media_seek = ft.Text(DEFAULTS.MEDIA_SEEK.value, size=16, color=ft.Colors.SECONDARY)
+    media_seek = ft.Text(DEFAULTS.MEDIA_SEEK.value, size=16, color=ft.Colors.SECONDARY, offset=ft.Offset(0, -0.1))
     
-    mobile_dev_btn = ft.ElevatedButton(
-        text="Enter Landscape Mode",
+    mobile_dev_btn = ft.IconButton(
         on_click=change_orientation,
-        adaptive=True, expand=True, width=50,
+        adaptive=True,
         icon=ft.Icons.STAY_CURRENT_LANDSCAPE
     )
     pause_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW, on_click=on_pause, disabled=True)
     stop_btn = ft.IconButton(icon=ft.Icons.STOP, on_click=on_stop, disabled=True)
-    explicit_toggle_btn_text = DEFAULTS.EXPLICIT_OFF.value if not safe else DEFAULTS.EXPLICIT_ON.value
-    explicit_toggle_btn = toggle_button_classic(explicit_toggle_btn_text, on_click=toggle_explicit_content)
     
     mv_slider = master_volume_slider(audio, page)
     audio_slider = audio_duration_slider(audio, media_seek)
+    audio_slider.padding = 5
     b_slider = audio_balance_slider(audio)
     
-    form: ft.Control
+    form = ft.Container(expand=True)
     form_controls = default_row([
         random_sfx_btn(audio, snackbar=True, page=page, alt_sfx=safe_sfx),
         random_music_btn(audio, callbacks=[music_btn_pressed], alt_music=safe_music)
     ])
     volume_controls = default_column([
-        ft.Text("Master Volume"),
-        default_row([mv_slider]),
-        ft.Text("Audio Balance"),
-        default_row([b_slider])
+        default_row([ft.Text("Master Volume"), mv_slider]),
+        default_row([ft.Text("Audio Balance"), b_slider])
     ], expand=False)
     
-    media_btns = ft.Container(default_row([pause_btn, stop_btn]))
+    media_btns = ft.Container(ft.Row([pause_btn, stop_btn], tight=True, spacing=0), padding=0, margin=0, expand=False)
     media_controls = ft.Container(default_column([
         media_label,
         media_desc,
-        media_seek,
-        default_row([audio_slider, media_btns])
-    ]))
+        ft.Row([media_seek, audio_slider, media_btns])
+    ], expand=False))
+    
+    settings_menu_button = ft.PopupMenuButton(
+        items=[
+            ft.PopupMenuItem(
+                text=DEFAULTS.EXPLICIT_OFF.value if not audio.settings["SAFE"] else DEFAULTS.EXPLICIT_ON.value,
+                on_click=toggle_explicit_content, icon=ft.Icons.MODE
+            )
+        ]
+    )
+    
+    page.appbar.actions.insert(0, mobile_dev_btn)
+    page.appbar.actions.insert(1, settings_menu_button)
     
     if (page.platform == ft.PagePlatform.WINDOWS and dev_mode): # Dev mode for Windows
-        page.open(ft.SnackBar(ft.Text("Dev mode is currently on"), duration=2000))
-        
-        dev_buttons = ft.Container(default_row([mobile_dev_btn]))
-        dev_form = default_column([
-            dev_buttons,
-            ft.Divider(),
-            volume_controls,
-            explicit_toggle_btn,
-            ft.Divider(),
-            form_controls,
-            ft.Divider(),
-            media_controls
-        ], expand=False)
-        form = dev_form
-    else: # Default look for all platforms
-        form = default_column([
-            volume_controls,
-            explicit_toggle_btn,
-            ft.Divider(),
-            form_controls,
-            ft.Divider(),
-            media_controls
-        ], expand=False)
+        page.open(ft.SnackBar(ft.Text("Dev mode is currently on"), duration=1000))
+
+    form.content = default_column([
+        volume_controls,
+        ft.Divider(),
+        form_controls,
+        ft.Divider(),
+        media_controls
+    ])
     
-    align_form = true_center_container(form)
+    draggable_form = ft.Container(ft.WindowDragArea(form, maximizable=False), expand=True)
     
-    page.add(align_form)
+    page.add(draggable_form)
 
 
 if __name__ == "__main__":

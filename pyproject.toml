@@ -1,6 +1,6 @@
 [project]
-name = "SeBoard"
-version = "1.0.0"
+name = "SeBored"
+version = "1.0.1"
 dependencies = [
     "flet>=0.28.3",
     "flet_audio>=0.1.0",

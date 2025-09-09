@@ -1,6 +1,6 @@
-name: SeBoard
-description: A Flet Sound Board App Made Especially For Sebastian
-version: 1.0.0
+name: SeBored
+description: A Flet app designed to alleviate your boredom
+version: 1.0.1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

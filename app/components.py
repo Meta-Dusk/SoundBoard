@@ -16,7 +16,7 @@ def preset_slider(
     on_change: ft.OptionalControlEventCallable = None,
     on_change_end: ft.OptionalControlEventCallable = None,
     on_change_start: ft.OptionalControlEventCallable = None,
-    tooltip: str = None, disabled: bool = False
+    tooltip: str = None, disabled: bool = False, expand: bool | int = True
 ) -> ft.Slider:
     """This is a premade slider component for use with audio settings"""
     
@@ -26,7 +26,7 @@ def preset_slider(
         mouse_cursor=ft.MouseCursor.GRAB, adaptive=True,
         on_change=on_change, on_change_end=on_change_end,
         on_change_start=on_change_start, disabled=disabled,
-        expand=True
+        expand=expand
     )
     return slider
 
@@ -197,7 +197,6 @@ def random_sfx_btn(
                 raise ValueError("alt_sfx cannot be None, and must be a list of Sound")
         
         if snackbar and page:
-            print("Show snackbar pls")
             snackbar_text = ft.Text(f"Playing SFX: {rnd_sfx.value.title}")
             page.open(ft.SnackBar(snackbar_text, duration=1000))
             page.update()

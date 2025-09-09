@@ -1,5 +1,5 @@
 from typing import Tuple, List
-from .file_declarations import Sound, PATHS, SFX, Music
+from .file_declarations import Sound, SFX, Music
 
 
 def format_ms(ms: int | float) -> str:

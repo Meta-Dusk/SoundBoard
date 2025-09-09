@@ -3,7 +3,7 @@ import flet as ft
 from typing import Sequence
 
 
-def default_column(controls: Sequence[ft.Control], expand: bool = True):
+def default_column(controls: Sequence[ft.Control], expand: bool | int = True):
     return ft.Column(
         controls=controls,
         alignment=ft.MainAxisAlignment.CENTER,
@@ -11,7 +11,7 @@ def default_column(controls: Sequence[ft.Control], expand: bool = True):
         expand=expand, adaptive=True
     )
     
-def default_row(controls: Sequence[ft.Control], expand: bool = True):
+def default_row(controls: Sequence[ft.Control], expand: bool | int = True):
     return ft.Row(
         controls=controls,
         alignment=ft.MainAxisAlignment.CENTER,
@@ -27,17 +27,7 @@ def default_container(content: ft.Control):
     )
     
 def true_center_container(content: ft.Control):
-    form = default_row([
-        default_column([
-            default_container(content)
-        ])
-    ])
-    
-    return form
+    return default_row([default_column([default_container(content)])])
 
 def expand_x_y(controls: Sequence[ft.Control]):
-    form = default_row([
-        default_column([controls])
-    ])
-    
-    return form
+    return default_row([default_column([controls])])

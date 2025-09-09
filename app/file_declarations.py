@@ -12,6 +12,8 @@ def resolve_path(file_name: str) -> Path:
         return (PATHS.SFX_DIR.value / file_name).resolve()
     elif (file_extension == "mp3"):
         return (PATHS.MUSIC_DIR.value / file_name).resolve()
+    elif (file_extension == "png" or "jpg"):
+        return (PATHS.IMAGES_DIR.value / file_name).resolve()
     else:
         raise ValueError("Invalid file type. Currently supported ones are .wav and .mp3")
 
@@ -19,6 +21,7 @@ def resolve_path(file_name: str) -> Path:
 class PATHS(Path, Enum):
     SFX_DIR = Path("assets") / "sfx"
     MUSIC_DIR = Path("assets") / "music"
+    IMAGES_DIR = Path("assets") / "images"
     SETTINGS_FILE = Path("app") / "settings.json"
 
 @dataclass
@@ -27,6 +30,16 @@ class Sound:
     title: str = "Unknown"
     description: str = "No description"
     explicit: bool = False
+
+@dataclass
+class Image:
+    str_path: str
+    description: str = "Unknown"
+
+
+# 📷 Images
+class Images(Enum):
+    SEB = Image(resolve_path("sebicon.png"), "Seb when bored")
 
 
 # 🎵 Music
