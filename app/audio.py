@@ -258,7 +258,7 @@ py -m app.audio
 '''
 import random
 
-from .containers import true_center_container, default_column
+from .containers import default_column
 from .styles import base_page
 
 
@@ -266,17 +266,38 @@ def test(page: ft.Page):
     audio = AudioManager(page)
     base_page(page)
     
+    def get_storage(key: DEFAULTS):
+        key_str = key.name
+        if page.client_storage.contains_key(key_str):
+            return page.client_storage.get(key_str)
+        else:
+            if set_storage(key_str, key.value):
+                get_storage(key)
+            else:
+                return None
+    
+    def set_storage(key: str, value: any) -> bool:
+        if page.client_storage.set(key, value):
+            print(f"Setting dict: {key}: {value}")
+            return True
+        else:
+            print(f"Something went wrong setting dict: {key}: {value}")
+            return False
+    
     def on_volume_change(e: ft.ControlEvent):
-        v = e.control.value
+        slider: ft.Slider = e.control
+        v = slider.value
         audio.set_volume(v) # saves UI value and updates music (if playing)
+        set_storage(DEFAULTS.VOLUME.name, v)
 
         # update slider label to show percentage
-        e.control.label = f"Volume: {int(v * 100)}%"
-        e.control.update()
+        slider.label = f"Volume: {int(v * 100)}%"
+        slider.update()
 
         # update any active audio controls in page.overlay (SFX etc.)
         scaled = audio._perceptual_volume(v)
         for ctrl in list(page.overlay):
+            ctrl: fa.Audio
         # many overlay items aren't audio controls; be defensive
             if hasattr(ctrl, "volume"):
                 try:
@@ -286,20 +307,17 @@ def test(page: ft.Page):
                     # ignore objects that look like audio but cannot be updated
                     pass
 
-    initial_volume = audio.settings.get("volume", 1.0)
+    initial_volume = get_storage(DEFAULTS.VOLUME)
 
     volume_slider = ft.Slider(
-        min=0,
-        max=1,
-        divisions=100,
-        value=initial_volume,
+        min=0, max=1, divisions=100, value=initial_volume,
         label=f"Volume: {int(initial_volume * 100)}%",
         on_change=on_volume_change,
     )
     
     paused: bool = False
     
-    def on_pause(e):
+    def on_pause(_):
         nonlocal paused
         
         if paused:
@@ -312,7 +330,7 @@ def test(page: ft.Page):
             pause_btn.text = "Resume Music"
         pause_btn.update()
         
-    def on_stop(e):
+    def on_stop(_):
         nonlocal paused
         
         if audio.music:
@@ -325,7 +343,7 @@ def test(page: ft.Page):
             paused = False
             pause_btn.update()
     
-    def play_random_music(e):
+    def play_random_music(_):
         audio.play_music(audio=random.choice(list(Music)), loop=True)
         pause_btn.disabled = False
         pause_btn.update()
@@ -336,14 +354,14 @@ def test(page: ft.Page):
     form = [
         ft.Text("Master Volume"),
         volume_slider,
-        ft.ElevatedButton("Play FN", on_click=lambda e: audio.play_sfx(SFX.FN)),
-        ft.ElevatedButton("Play Aneurysm", on_click=lambda e: audio.play_sfx(SFX.ANEURYSM)),
+        ft.ElevatedButton("Play FN", on_click=lambda _: audio.play_sfx(SFX.FN)),
+        ft.ElevatedButton("Play Aneurysm", on_click=lambda _: audio.play_sfx(SFX.ANEURYSM)),
         ft.ElevatedButton("Play Random Music", on_click=play_random_music),
         pause_btn,
         stop_btn,
     ]
     
-    page.add(true_center_container(default_column(form)))
+    page.add(default_column(form))
 
 if __name__ == "__main__":
     ft.app(target=test)

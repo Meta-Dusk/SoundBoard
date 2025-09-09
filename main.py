@@ -1,11 +1,10 @@
 import flet as ft
 
-from app.containers import default_row, default_column, expand_x_y
+from app.containers import default_row, default_column
 from app.audio import AudioManager
 from app.styles import mobile_view, mobile_appbar
 from app.components import random_music_btn, random_sfx_btn, master_volume_slider, audio_duration_slider, audio_balance_slider
 from app.utilities import generate_non_explicits
-from app.buttons import toggle_button_classic
 from enum import Enum
 
 
@@ -18,7 +17,6 @@ class DEFAULTS(str, Enum):
 
 
 def main(page: ft.Page):
-    dev_mode: bool = False
     landscape: bool = False
     paused: bool = False
     
@@ -97,14 +95,23 @@ def main(page: ft.Page):
     def toggle_explicit_content(e: ft.ControlEvent):
         audio.settings["SAFE"] = not audio.settings["SAFE"]
         safe: bool = audio.settings["SAFE"]
-        print(f"Toggled explicit content to {safe}")
+        print(f"Toggled explicit content to {not safe}")
         
         popup_menu_item: ft.PopupMenuItem = e.control
         popup_menu_item.text = DEFAULTS.EXPLICIT_OFF.value if not safe else DEFAULTS.EXPLICIT_ON.value
         popup_menu_item.badge = None
         popup_menu_item.update()
+        page.open(ft.SnackBar(ft.Text(f"Explicit content is now {"disabled" if safe else "enabled"}"), duration=1500))
+        page.update()
         
         audio._save_settings()
+    
+    def toggle_overlap_sfx(e: ft.ControlEvent):
+        toggle_item: ft.PopupMenuItem = e.control
+        toggle_item.checked = not toggle_item.checked
+        print(f"Overlapping SFX is now {toggle_item.checked}")
+        # toggle_item.update()
+        page.update()
     
     page.on_resized = on_resized
     page.auto_scroll = True
@@ -126,11 +133,16 @@ def main(page: ft.Page):
     audio_slider.padding = 5
     b_slider = audio_balance_slider(audio)
     
+    overlap_sfx_menu_item = ft.PopupMenuItem(
+        text="Overlapping SFX", icon=ft.Icons.SPEAKER_GROUP, checked=True,
+        on_click=toggle_overlap_sfx
+    )
+    
     form = ft.Container(expand=True)
-    form_controls = default_row([
-        random_sfx_btn(audio, snackbar=True, page=page, alt_sfx=safe_sfx),
+    form_controls = ft.Column([
+        random_sfx_btn(audio, snackbar=True, page=page, alt_sfx=safe_sfx, overlap=overlap_sfx_menu_item.checked),
         random_music_btn(audio, callbacks=[music_btn_pressed], alt_music=safe_music)
-    ])
+    ], scroll=ft.ScrollMode.AUTO, expand=True)
     volume_controls = default_column([
         default_row([ft.Text("Master Volume"), mv_slider]),
         default_row([ft.Text("Audio Balance"), b_slider])
@@ -148,15 +160,14 @@ def main(page: ft.Page):
             ft.PopupMenuItem(
                 text=DEFAULTS.EXPLICIT_OFF.value if not audio.settings["SAFE"] else DEFAULTS.EXPLICIT_ON.value,
                 on_click=toggle_explicit_content, icon=ft.Icons.MODE
-            )
+            ),
+            overlap_sfx_menu_item
         ]
     )
     
-    page.appbar.actions.insert(0, mobile_dev_btn)
-    page.appbar.actions.insert(1, settings_menu_button)
-    
-    if (page.platform == ft.PagePlatform.WINDOWS and dev_mode): # Dev mode for Windows
-        page.open(ft.SnackBar(ft.Text("Dev mode is currently on"), duration=1000))
+    if (page.platform == ft.PagePlatform.WINDOWS):
+        page.appbar.actions.insert(0, mobile_dev_btn)
+        page.appbar.actions.insert(1, settings_menu_button)
 
     form.content = default_column([
         volume_controls,

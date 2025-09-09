@@ -5,17 +5,23 @@ from pathlib import Path
 
 # Helper function
 def resolve_path(file_name: str) -> Path:
+    class FileExtensions(str, Enum):
+        WAV = "wav"
+        MP3 = "mp3"
+        PNG = "png"
+        JPG = "jpg"
+    
     name = file_name.split(".")
     file_extension = name[1]
     
-    if (file_extension == "wav"):
+    if (file_extension == FileExtensions.WAV):
         return (PATHS.SFX_DIR.value / file_name).resolve()
-    elif (file_extension == "mp3"):
+    elif (file_extension == FileExtensions.MP3):
         return (PATHS.MUSIC_DIR.value / file_name).resolve()
-    elif (file_extension == "png" or "jpg"):
+    elif (file_extension == FileExtensions.PNG or FileExtensions.JPG):
         return (PATHS.IMAGES_DIR.value / file_name).resolve()
     else:
-        raise ValueError("Invalid file type. Currently supported ones are .wav and .mp3")
+        raise ValueError(f"Invalid file type. Currently supported ones are: {[f.name.lower() for f in FileExtensions]}")
 
 
 class PATHS(Path, Enum):
@@ -68,3 +74,44 @@ class SFX(Enum):
     DANCE = Sound(resolve_path("dance_when_party.wav"), "I Like to Dance when I Party", "Who the hell is Saki?")
     MUSTARD = Sound(resolve_path("mustard.wav"), "MUSTAAAAAAARD", "Mustard is a condiment made from the seeds of a mustard plant")
     WHIPLASH = Sound(resolve_path("whiplash.wav"), "One Look...", "Give 'em whiplash")
+
+
+"""
+Run with:
+py -m app.file_declarations
+"""
+
+def test():
+    def check_audio():
+        """Checks integrity of all audio files"""
+        sfx_count = 0
+        music_count = 0
+
+        print("\nChecking registered SFX...")
+        for sfx in SFX:
+            if Path(sfx.value.str_path).exists():
+                print(f"{sfx.name}: {sfx.value.str_path}")
+                sfx_count += 1
+            else:
+                print(f"SFX {sfx.name} does not exist at {sfx.value.str_path}!")
+        print(f"Found {sfx_count}/{len(SFX)} SFX files\n")
+
+        print("\nChecking registered Music...")
+        for music in Music:
+            if Path(music.value.str_path).exists():
+                print(f"{music.name}: {music.value.str_path}")
+                music_count += 1
+            else:
+                print(f"Music {music.name} does not exist at {music.value.str_path}!")
+        print(f"Found {music_count}/{len(Music)} Music files\n")
+
+        if sfx_count == len(SFX) and music_count == len(Music):
+            print("[AudioManager] ✅ All sound files are fully registered!\n")
+        else:
+            print("[AudioManager] ⚠️ Some files are missing.\n")
+            
+    print("Test for validating assets...\n")
+    check_audio()
+    
+if __name__ == "__main__":
+    test()
