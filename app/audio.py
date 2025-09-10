@@ -1,4 +1,3 @@
-import json
 import math
 import flet as ft
 import flet_audio as fa
@@ -6,8 +5,8 @@ import flet_audio as fa
 from pathlib import Path
 from enum import Enum
 from typing import Callable
-from .utilities import format_ms
-from .file_declarations import SFX, Music, PATHS
+from .utilities import format_ms, get_storage, set_storage
+from .file_declarations import SFX, Music
 
 
 class DEFAULTS(Enum):
@@ -53,38 +52,12 @@ class AudioManager:
         self.page = page
         self.music: fa.Audio | None = None
         self.sfx: fa.Audio | None = None
-        self.settings = self._load_settings()
         self.debug: bool = True
         self.on_state_changed: Callable[[fa.AudioStateChangeEvent], None] = None
         self.on_duration_changed: Callable[[fa.AudioDurationChangeEvent], None] = None
         self.on_position_changed: Callable[[fa.AudioPositionChangeEvent], None] = None
         self.on_seek_complete: Callable[[fa.AudioStateChangeEvent], None] = None
         self.on_loaded: Callable[[], None] = None
-
-    # ---------- SETTINGS ----------
-    def _load_settings(self) -> dict:
-        default_settings = self._get_default_settings()
-        if PATHS.SETTINGS_FILE.value.exists():
-            try:
-                return json.loads(PATHS.SETTINGS_FILE.value.read_text())
-            except Exception:
-                self._save_settings(default_settings)
-                return default_settings
-        else:
-            self._save_settings(default_settings)
-            return default_settings
-
-    def _save_settings(self, settings: dict | None = None):
-        data = settings if settings is not None else self.settings
-        PATHS.SETTINGS_FILE.value.parent.mkdir(parents=True, exist_ok=True)
-        PATHS.SETTINGS_FILE.value.write_text(json.dumps(data, indent=2))
-        
-    # ---------- SETTINGS GETTERS ----------
-    def _get_settings(self, member: DEFAULTS) -> float | bool:
-        return self.settings.get(member.name, member.value)
-    
-    def _get_default_settings(self) -> dict[str, float | bool]:
-        return {member.name: member.value for member in DEFAULTS}
 
     # ---------- SOUND EFFECTS ----------
     def play_sfx(self, audio: SFX, overlap: bool = True):
@@ -93,7 +66,7 @@ class AudioManager:
             self.page.overlay.remove(self.sfx)
             print("[AudioManager] Overriding SFX")
         
-        def on_state_changed(e):
+        def on_state_changed(e: fa.AudioStateChangeEvent):
             if (self.debug):
                 print(f"SFX State: {audio.value.title} -> {e.data}")
             if e.data == "stopped":
@@ -106,7 +79,7 @@ class AudioManager:
         self.sfx = fa.Audio(
             src=str(audio.value.str_path),
             autoplay=True,
-            volume=self._get_settings(DEFAULTS.VOLUME),
+            volume=get_storage(DEFAULTS.VOLUME, self.page),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
         )
@@ -147,7 +120,7 @@ class AudioManager:
             src=str(audio.value.str_path),
             data=audio.value,
             autoplay=True,
-            volume=self._get_settings(DEFAULTS.VOLUME),
+            volume=get_storage(DEFAULTS.VOLUME, self.page),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
             on_duration_changed=self.on_duration_changed,
@@ -192,8 +165,7 @@ class AudioManager:
         scaled_volume = self._perceptual_volume(volume)
 
         # Save UI volume (not scaled) so settings.json stays intuitive
-        self.settings[DEFAULTS.VOLUME.name] = volume
-        self._save_settings()
+        set_storage(DEFAULTS.VOLUME, volume, self.page)
 
         if self.music:
             self.music.volume = scaled_volume
@@ -203,7 +175,7 @@ class AudioManager:
             self.sfx.update()
 
         if self.debug:
-            print(f"[DEBUG] Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
+            print(f"[AudioManager | DEBUG] Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
             
     def set_balance(self, balance: float):
         """Sets balance to either `Music` or `SFX`"""
@@ -265,30 +237,10 @@ from .styles import base_page
 def test(page: ft.Page):
     audio = AudioManager(page)
     base_page(page)
-    
-    def get_storage(key: DEFAULTS):
-        key_str = key.name
-        if page.client_storage.contains_key(key_str):
-            return page.client_storage.get(key_str)
-        else:
-            if set_storage(key_str, key.value):
-                get_storage(key)
-            else:
-                return None
-    
-    def set_storage(key: str, value: any) -> bool:
-        if page.client_storage.set(key, value):
-            print(f"Setting dict: {key}: {value}")
-            return True
-        else:
-            print(f"Something went wrong setting dict: {key}: {value}")
-            return False
-    
     def on_volume_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
         v = slider.value
         audio.set_volume(v) # saves UI value and updates music (if playing)
-        set_storage(DEFAULTS.VOLUME.name, v)
 
         # update slider label to show percentage
         slider.label = f"Volume: {int(v * 100)}%"
@@ -307,7 +259,7 @@ def test(page: ft.Page):
                     # ignore objects that look like audio but cannot be updated
                     pass
 
-    initial_volume = get_storage(DEFAULTS.VOLUME)
+    initial_volume = get_storage(DEFAULTS.VOLUME, page)
 
     volume_slider = ft.Slider(
         min=0, max=1, divisions=100, value=initial_volume,

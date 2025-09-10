@@ -3,7 +3,7 @@ import flet as ft
 import flet_audio as fa
 
 from .audio import AudioManager, DEFAULTS
-from .utilities import format_ms
+from .utilities import format_ms, get_storage
 from .file_declarations import SFX, Music, Sound
 from typing import Callable
 
@@ -32,7 +32,7 @@ def preset_slider(
 
 def master_volume_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
     """This component will control and update the user's saved volume settings"""
-    initial_volume = audio._get_settings(DEFAULTS.VOLUME)
+    initial_volume = get_storage(DEFAULTS.VOLUME, page)
     
     def on_volume_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
@@ -62,9 +62,9 @@ def master_volume_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
     )
     return volume_slider
 
-def audio_balance_slider(audio: AudioManager) -> ft.Slider:
+def audio_balance_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
     """This component will control and update the audio's balance"""
-    initial_balance = audio._get_settings(DEFAULTS.BALANCE)
+    initial_balance = get_storage(DEFAULTS.BALANCE, page)
     
     def on_balance_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
@@ -125,7 +125,7 @@ def audio_duration_slider(audio: AudioManager, label: ft.Text) -> ft.Slider:
 
 # ---------- BUTTONS ----------
 def random_music_btn(
-    audio: AudioManager, loop: bool = True,
+    audio: AudioManager, page: ft.Page, loop: bool = True,
     callbacks: list[Callable[[ft.ControlEvent], None]] | None = None,
     alt_music: list[Sound] = None
 ):
@@ -142,7 +142,8 @@ def random_music_btn(
         `ElevatedButton`: A premade button for playing random Music
     """
     def play_random_music(_):
-        safe: bool = audio.settings["SAFE"]
+        nonlocal page
+        safe: bool = get_storage(DEFAULTS.SAFE, page)
         
         if not safe:
             print("Explicit content enabled")
@@ -182,7 +183,7 @@ def random_sfx_btn(
     """
     def play_random_sfx(_):
         rnd_sfx: SFX = None
-        safe: bool = audio.settings["SAFE"]
+        safe: bool = get_storage(DEFAULTS.SAFE, page)
         
         if not safe:
             print("Explicit content enabled")
