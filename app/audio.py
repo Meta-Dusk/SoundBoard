@@ -2,11 +2,11 @@ import math
 import flet as ft
 import flet_audio as fa
 
-from pathlib import Path
 from enum import Enum
 from typing import Callable
-from .utilities import format_ms, get_storage, set_storage
+from .utilities import format_ms, check_audio
 from .file_declarations import SFX, Music
+from .storage import Storage
 
 
 class DEFAULTS(Enum):
@@ -16,39 +16,19 @@ class DEFAULTS(Enum):
     SAFE = True
 
 
-def check_audio():
-    """Checks integrity of all audio files"""
-    sfx_count = 0
-    music_count = 0
-
-    print("\nChecking registered SFX...")
-    for sfx in SFX:
-        if Path(sfx.value.str_path).exists():
-            print(f"{sfx.name}: {sfx.value.str_path}")
-            sfx_count += 1
-        else:
-            print(f"SFX {sfx.name} does not exist at {sfx.value.str_path}!")
-    print(f"Found {sfx_count}/{len(SFX)} SFX files\n")
-
-    print("\nChecking registered Music...")
-    for music in Music:
-        if Path(music.value.str_path).exists():
-            print(f"{music.name}: {music.value.str_path}")
-            music_count += 1
-        else:
-            print(f"Music {music.name} does not exist at {music.value.str_path}!")
-    print(f"Found {music_count}/{len(Music)} Music files\n")
-
-    if sfx_count == len(SFX) and music_count == len(Music):
-        print("[AudioManager] ✅ All sound files are fully registered!\n")
-    else:
-        print("[AudioManager] ⚠️ Some files are missing.\n")
-
-
 check_audio()
 
 class AudioManager:
-    def __init__(self, page: ft.Page):
+    """
+    The `AudioManager` handles both SFX and Music playback, and is made using `flet-audio` components.
+    When making an instance of this, refer to the Args below:
+    
+    Args:
+        page (Page): The `Page` instance.
+        debug (bool): Set to `True` to print debug messages.
+        debug_name (str): (Optional) The string used before outputting debug messages.
+    """
+    def __init__(self, page: ft.Page, debug: bool = True, debug_name: str = "[AudioManager]"):
         self.page = page
         self.music: fa.Audio | None = None
         self.sfx: fa.Audio | None = None
@@ -58,28 +38,41 @@ class AudioManager:
         self.on_position_changed: Callable[[fa.AudioPositionChangeEvent], None] = None
         self.on_seek_complete: Callable[[fa.AudioStateChangeEvent], None] = None
         self.on_loaded: Callable[[], None] = None
+        self.storage = Storage(page)
+        self.name = debug_name
+        self.debug = debug
 
     # ---------- SOUND EFFECTS ----------
-    def play_sfx(self, audio: SFX, overlap: bool = True):
+    def play_sfx(self, audio: SFX, overlap: bool = True) -> None:
+        """
+        Plays a sound effect.
+        
+        Args:
+            audio (SFX): Takes an `SFX` Enum, which is what will be played.
+            overlap (bool): Set to `True` if SFX played can overlap eachother during playback.
+        """
         if self.sfx and not overlap:
             self.sfx.release()
             self.page.overlay.remove(self.sfx)
-            print("[AudioManager] Overriding SFX")
+            if self.debug:
+                print(f"{self.name} Overriding SFX")
         
         def on_state_changed(e: fa.AudioStateChangeEvent):
-            if (self.debug):
+            if self.debug:
                 print(f"SFX State: {audio.value.title} -> {e.data}")
             if e.data == "stopped":
                 self._cleanup_sfx(e.control)
                 
         def on_loaded(_):
-            if (self.debug):
+            if self.debug:
                 print(f"SFX Loaded: {audio.value.title}")
+            if self.on_loaded is not None:
+                self.on_loaded()
         
         self.sfx = fa.Audio(
-            src=str(audio.value.str_path),
+            src=audio.value.str_path,
             autoplay=True,
-            volume=get_storage(DEFAULTS.VOLUME, self.page),
+            volume=self.storage.get(DEFAULTS.VOLUME),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
         )
@@ -87,6 +80,7 @@ class AudioManager:
         self.page.update()
 
     def _cleanup_sfx(self, sfx: fa.Audio):
+        """Removes an SFX Audio instance."""
         if sfx in self.page.overlay:
             self.page.overlay.remove(sfx)
             self.page.update()
@@ -95,32 +89,39 @@ class AudioManager:
 
     # ---------- MUSIC ----------
     def play_music(self, audio: Music, loop: bool = False):
+        """
+        Plays music, which will play in a different Audio object, separate from the SFX.
+        
+        Args:
+            audio (Music): Takes a `Music` Enum, which is what will be played.
+            loop (bool): Set to `True` if music will loop its playback once finished.
+        """
         if self.music:
             self.music.release()
             self.page.overlay.remove(self.music)
-            print("[AudioManager] Overriding Music")
+            if self.debug:
+                print(f"{self.name} Overriding Music")
             
         def on_loaded(_):
-            if (self.debug):
-                print(f"[AudioManager] Music Loaded: {audio.value.title}")
+            if self.debug:
+                print(f"{self.name} Music Loaded: {audio.value.title}")
             if self.on_loaded is not None:
                 self.on_loaded()
                 
         def on_state_changed(e: fa.AudioStateChangeEvent):
-            if (self.debug):
+            if self.debug:
                 loop_text = " (Looping)" if loop else ""
-                print(f"[AudioManager] Music State: {audio.value.title} -> {e.state.name}" + loop_text)
+                print(f"{self.name} Music State: {audio.value.title} -> {e.state.name}" + loop_text)
             if (e.data == "completed" and loop):
-                print("[AudioManager] Looping music...")
+                print(f"{self.name} Looping music...")
                 self.play_music(audio, loop)
             if self.on_state_changed is not None:
                 self.on_state_changed(e)
 
         self.music = fa.Audio(
             src=str(audio.value.str_path),
-            data=audio.value,
-            autoplay=True,
-            volume=get_storage(DEFAULTS.VOLUME, self.page),
+            data=audio.value, autoplay=True,
+            volume=self.storage.get(DEFAULTS.VOLUME),
             on_loaded=on_loaded,
             on_state_changed=on_state_changed,
             on_duration_changed=self.on_duration_changed,
@@ -131,22 +132,26 @@ class AudioManager:
         self.page.update()
 
     def pause_music(self):
+        """Pause currently loaded music in `AudioManager` instance."""
         if self.music:
             self.music.pause()
 
     def resume_music(self):
+        """Resume currently loaded music in `AudioManager` instance."""
         if self.music:
             self.music.resume()
 
     def stop_music(self):
+        """Stop currently loaded music in `AudioManager` instance."""
         if self.music:
             self.music.release()
             self.page.overlay.remove(self.music)
             self.music = None
             self.page.update()
-            print("[AudioManager] Stopping music")
+            print(f"{self.name} Stopping music")
             
     def stop_all(self):
+        """Stops all loaded `Audio` instances in `AudioManager`."""
         self.stop_music()
         self._cleanup_sfx()
 
@@ -157,15 +162,12 @@ class AudioManager:
         return math.pow(ui_volume, 2.0)  # quadratic dropoff (natural feel)
 
     def set_volume(self, volume: float):
-        """
-        Set the user volume (0.0-1.0 UI scale).
-        Internally applies perceptual scaling for natural loudness.
-        """
+        """Set the user volume (0.0-1.0 UI scale). Internally applies perceptual scaling for natural loudness."""
         volume = max(0.0, min(1.0, volume))  # clamp UI input
         scaled_volume = self._perceptual_volume(volume)
 
         # Save UI volume (not scaled) so settings.json stays intuitive
-        set_storage(DEFAULTS.VOLUME, volume, self.page)
+        self.storage.set(DEFAULTS.VOLUME, volume)
 
         if self.music:
             self.music.volume = scaled_volume
@@ -178,7 +180,7 @@ class AudioManager:
             print(f"[AudioManager | DEBUG] Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
             
     def set_balance(self, balance: float):
-        """Sets balance to either `Music` or `SFX`"""
+        """Sets balance to either `Music` or `SFX`."""
         if self.music:
             self.music.balance = balance
             self.music.update()
@@ -187,37 +189,38 @@ class AudioManager:
             self.sfx.update()
             
         if self.debug:
-            print(f"[AudioManager] Balance set: {balance:.2f}")
+            print(f"{self.name} Balance set: {balance:.2f}")
             
     def seek(self, seek: int):
-        """Seeks music for `seek` amount of milliseconds"""
+        """Seeks music for `seek` amount of milliseconds."""
         if self.music:
             self.music.seek(seek)
             if self.debug:
-                print(f"[AudioManager] Seeking music at {seek}ms ({format_ms(seek)}s)")
+                print(f"{self.name} Seeking music at {seek}ms ({format_ms(seek)}s)")
         else:
-            print("[AudioManager] No music to seek")
+            if self.debug:
+                print(f"{self.name} No music to seek")
             
     def get_duration(self) -> int | None:
-        """Gets the duration of the current song, which can either be `int` or `None`"""
+        """Gets the duration of the current song, which can either be `int` or `None`."""
         duration: int | None = None
         
         if self.music:
             duration = self.music.get_duration()
         if self.debug:
-            debug_msg = f"[AudioManager] Current song duration: {duration}" if duration is not None else "[AudioManager] No music playing"
+            debug_msg = f"{self.name} Current song duration: {duration}" if duration is not None else f"{self.name} No music playing"
             print(debug_msg)
             
         return duration
     
     def get_position(self) -> int | None:
-        """Gets the current timestamp or position of the current song playing"""
+        """Gets the current timestamp or position of the current song playing."""
         position: int | None = None
         
         if self.music:
             position = self.music.get_current_position()
         if self.debug:
-            debug_msg = f"[AudioManager] Current song timestamp: {position}" if position is not None else "[AudioManager] No music playing"
+            debug_msg = f"{self.name} Current song timestamp: {position}" if position is not None else f"{self.name} No music playing"
             print(debug_msg)
             
         return position
@@ -235,8 +238,12 @@ from .styles import base_page
 
 
 def test(page: ft.Page):
+    storage = Storage(page)
     audio = AudioManager(page)
     base_page(page)
+    
+    paused: bool = False
+    
     def on_volume_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
         v = slider.value
@@ -258,16 +265,6 @@ def test(page: ft.Page):
                 except Exception:
                     # ignore objects that look like audio but cannot be updated
                     pass
-
-    initial_volume = get_storage(DEFAULTS.VOLUME, page)
-
-    volume_slider = ft.Slider(
-        min=0, max=1, divisions=100, value=initial_volume,
-        label=f"Volume: {int(initial_volume * 100)}%",
-        on_change=on_volume_change,
-    )
-    
-    paused: bool = False
     
     def on_pause(_):
         nonlocal paused
@@ -299,6 +296,14 @@ def test(page: ft.Page):
         audio.play_music(audio=random.choice(list(Music)), loop=True)
         pause_btn.disabled = False
         pause_btn.update()
+        
+    initial_volume = storage.get(DEFAULTS.VOLUME)
+
+    volume_slider = ft.Slider(
+        min=0, max=1, divisions=100, value=initial_volume,
+        label=f"Volume: {int(initial_volume * 100)}%",
+        on_change=on_volume_change,
+    )
         
     pause_btn = ft.ElevatedButton("Pause Music", on_click=on_pause, disabled=True)
     stop_btn = ft.ElevatedButton("Stop Music", on_click=on_stop)

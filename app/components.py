@@ -3,8 +3,9 @@ import flet as ft
 import flet_audio as fa
 
 from .audio import AudioManager, DEFAULTS
-from .utilities import format_ms, get_storage
+from .utilities import format_ms
 from .file_declarations import SFX, Music, Sound
+from .storage import Storage
 from typing import Callable
 
 # ---------- SLIDERS ----------
@@ -30,9 +31,10 @@ def preset_slider(
     )
     return slider
 
-def master_volume_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
+# TODO: Migrate slider data to a class
+def master_volume_slider(audio: AudioManager, page: ft.Page, storage: Storage) -> ft.Slider:
     """This component will control and update the user's saved volume settings"""
-    initial_volume = get_storage(DEFAULTS.VOLUME, page)
+    initial_volume = storage.get(DEFAULTS.VOLUME)
     
     def on_volume_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
@@ -62,14 +64,15 @@ def master_volume_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
     )
     return volume_slider
 
-def audio_balance_slider(audio: AudioManager, page: ft.Page) -> ft.Slider:
+def audio_balance_slider(audio: AudioManager, storage: Storage) -> ft.Slider:
     """This component will control and update the audio's balance"""
-    initial_balance = get_storage(DEFAULTS.BALANCE, page)
+    initial_balance = storage.get(DEFAULTS.BALANCE)
     
     def on_balance_change(e: ft.ControlEvent):
         slider: ft.Slider = e.control
         balance = slider.value
         audio.set_balance(balance) # saves UI value and updates music (if playing)
+        storage.set(DEFAULTS.BALANCE, round(balance, 2))
 
         slider.label = f"Balance: {balance:.2f}"
         slider.update()
@@ -125,7 +128,7 @@ def audio_duration_slider(audio: AudioManager, label: ft.Text) -> ft.Slider:
 
 # ---------- BUTTONS ----------
 def random_music_btn(
-    audio: AudioManager, page: ft.Page, loop: bool = True,
+    audio: AudioManager, page: ft.Page, safe: bool, loop: bool = True,
     callbacks: list[Callable[[ft.ControlEvent], None]] | None = None,
     alt_music: list[Sound] = None
 ):
@@ -143,7 +146,6 @@ def random_music_btn(
     """
     def play_random_music(_):
         nonlocal page
-        safe: bool = get_storage(DEFAULTS.SAFE, page)
         
         if not safe:
             print("Explicit content enabled")
@@ -163,9 +165,10 @@ def random_music_btn(
     return ft.ElevatedButton("Play Random Music", on_click=play_random_music)
 
 def random_sfx_btn(
-    audio: AudioManager, overlap: bool = True, snackbar: bool = False,
+    audio: AudioManager, page: ft.Page, safe: bool,
+    overlap: bool = True, snackbar: bool = False,
     callbacks: list[Callable[[ft.ControlEvent], None]] | None = None,
-    page: ft.Page | None = None, alt_sfx: list[Sound] = None
+    alt_sfx: list[Sound] = None
 ):
     """
     A button that will play a randomly selected SFX in the `SFX` enum class
@@ -183,7 +186,6 @@ def random_sfx_btn(
     """
     def play_random_sfx(_):
         rnd_sfx: SFX = None
-        safe: bool = get_storage(DEFAULTS.SAFE, page)
         
         if not safe:
             print("Explicit content enabled")
