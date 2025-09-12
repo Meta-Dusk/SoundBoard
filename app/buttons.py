@@ -22,3 +22,12 @@ def toggle_button_classic(
         text=text, expand=expand, on_click=on_click
     )
     return text_btn
+
+def preset_sound_btn(
+    text: str = "Sound Text", expand: bool = True, height: ft.OptionalNumber = 50,
+    on_click: ft.OptionalEventCallable = None, col: ft.ResponsiveNumber = {"xs":12,"md":6,"lg":3},
+    data: any = None, icon: ft.IconValue = None
+) -> ft.ElevatedButton:
+    return ft.ElevatedButton(
+        text=text, expand=expand, height=height, on_click=on_click, col=col, data=data, icon=icon
+    )

@@ -1,9 +1,6 @@
 import flet as ft
 
-from pathlib import Path
-from typing import Tuple, List
 from enum import Enum
-from .file_declarations import Sound, SFX, Music
 
 
 class PREFIXES(Enum):
@@ -39,59 +36,6 @@ def format_ms(ms: int | float) -> str:
     minutes = total_seconds // 60
     seconds = total_seconds % 60
     return f"{minutes}:{seconds:02d}"
-
-def generate_non_explicits() -> Tuple[List[Sound], List[Sound]]:
-    """
-    Generates lists of `Audio` excluding those tagged as `explicit=`True`.`
-    
-    Returns:
-        Tuple: A tuple of lists, containing `Sound`, two of which are `safe_sfx` and `safe_music`.
-    """
-    safe_sfx = []
-    safe_music = []
-    
-    print("Generating safe_sfx")
-    for sfx in SFX:
-        if (not sfx.value.explicit):
-            safe_sfx.append(sfx)
-    print(f"Finished generation. Original size: {len(SFX)} -> New size: {len(safe_sfx)}\n")
-    
-    print("Generating safe_music")
-    for music in Music:
-        if (not music.value.explicit):
-            safe_music.append(music)
-    print(f"Finished generation. Original size: {len(Music)} -> New size: {len(safe_music)}\n")
-    
-    return safe_sfx, safe_music
-
-
-def check_audio():
-    """Checks integrity of all audio files."""
-    sfx_count = 0
-    music_count = 0
-
-    print("\nChecking registered SFX...")
-    for sfx in SFX:
-        if Path(sfx.value.str_path).exists():
-            print(f"{sfx.name}: {sfx.value.str_path}")
-            sfx_count += 1
-        else:
-            print(f"SFX {sfx.name} does not exist at {sfx.value.str_path}!")
-    print(f"Found {sfx_count}/{len(SFX)} SFX files\n")
-
-    print("\nChecking registered Music...")
-    for music in Music:
-        if Path(music.value.str_path).exists():
-            print(f"{music.name}: {music.value.str_path}")
-            music_count += 1
-        else:
-            print(f"Music {music.name} does not exist at {music.value.str_path}!")
-    print(f"Found {music_count}/{len(Music)} Music files\n")
-
-    if sfx_count == len(SFX) and music_count == len(Music):
-        print("[AudioManager] ✅ All sound files are fully registered!\n")
-    else:
-        print("[AudioManager] ⚠️ Some files are missing.\n")
 
 
 """

@@ -6,6 +6,8 @@ from .audio import AudioManager, DEFAULTS
 from .utilities import format_ms
 from .file_declarations import SFX, Music, Sound
 from .storage import Storage
+from .popups import simple_popup
+from .buttons import preset_sound_btn
 from typing import Callable
 
 # ---------- SLIDERS ----------
@@ -33,7 +35,17 @@ def preset_slider(
 
 # TODO: Migrate slider data to a class
 def master_volume_slider(audio: AudioManager, page: ft.Page, storage: Storage) -> ft.Slider:
-    """This component will control and update the user's saved volume settings"""
+    """
+    This component will control and update the user's saved volume settings.
+    
+    Args:
+        audio (AudioManager): The `AudioManager` instance.
+        page (Page): The `Page` instance.
+        storage (Storage): The `Storage` instance.
+    
+    Returns:
+        `Slider`: A premade slider that will represent the global volume of all audio.
+    """
     initial_volume = storage.get(DEFAULTS.VOLUME)
     
     def on_volume_change(e: ft.ControlEvent):
@@ -65,7 +77,16 @@ def master_volume_slider(audio: AudioManager, page: ft.Page, storage: Storage) -
     return volume_slider
 
 def audio_balance_slider(audio: AudioManager, storage: Storage) -> ft.Slider:
-    """This component will control and update the audio's balance"""
+    """
+    This component will control and update all audio balance found in the `AudioManager`.
+    
+    Args:
+        audio (AudioManager): The `AudioManager` instance.
+        storage (Storage): The `Storage` instance.
+    
+    Returns:
+        `Slider`: A premade slider that will represent the balance value of all audio.
+    """
     initial_balance = storage.get(DEFAULTS.BALANCE)
     
     def on_balance_change(e: ft.ControlEvent):
@@ -85,7 +106,16 @@ def audio_balance_slider(audio: AudioManager, storage: Storage) -> ft.Slider:
     return balance_slider  
 
 def audio_duration_slider(audio: AudioManager, label: ft.Text) -> ft.Slider:
-    """This component will show the current music playing, its duration and current timestamp"""
+    """
+    This component will show the current music playing, its duration, and current timestamp.
+    
+    Args:
+        audio (AudioManager): The `AudioManager` instance.
+        label (Text): The `Text` object of which will serve as the dynamic label.
+    
+    Returns:
+        `Slider`: A premade slider that will represent the playback status of the current music.
+    """
     seeking: bool = False
     
     def on_duration_changed(e: fa.AudioDurationChangeEvent):
@@ -128,25 +158,24 @@ def audio_duration_slider(audio: AudioManager, label: ft.Text) -> ft.Slider:
 
 # ---------- BUTTONS ----------
 def random_music_btn(
-    audio: AudioManager, page: ft.Page, safe: bool, loop: bool = True,
-    callbacks: list[Callable[[ft.ControlEvent], None]] | None = None,
+    audio: AudioManager, safe: bool, loop: bool = True,
+    callbacks: list[Callable[[], None]] | None = None,
     alt_music: list[Sound] = None
-):
+)-> ft.ElevatedButton:
     """
-    A button that will play a randomly selected music in the `Music` enum class
+    A button that will play a randomly selected music in the `Music` Enum class.
 
     Args:
-        audio (AudioManager): `AudioManager` instance
-        loop (bool): Whether the music will loop once finished playing
-        safe (bool): Enable to exclude playing explicit music (only works if `alt_music` is not `None`)
-        callbacks (list): A list of callbacks that takes a `ControlEvent` and retuns `None` if you want to add more function calls
+        audio (AudioManager): The `AudioManager` instance.
+        safe (bool): Enable to exclude playing explicit music (only works if `alt_music` is not `None`).
+        loop (bool): Whether the music will loop once finished playing.
+        callbacks (list): A list of callbacks that retuns `None` if you want to add more function calls.
+        alt_sfx (list): A list of alternate `Sound` to choose from when `safe` is `True`.
 
     Returns:
-        `ElevatedButton`: A premade button for playing random Music
+        `ElevatedButton`: A premade button for playing random Music.
     """
     def play_random_music(_):
-        nonlocal page
-        
         if not safe:
             print("Explicit content enabled")
             audio.play_music(audio=random.choice(list(Music)), loop=loop)
@@ -162,27 +191,28 @@ def random_music_btn(
         for cb in callbacks:
             cb(_)
     
-    return ft.ElevatedButton("Play Random Music", on_click=play_random_music)
+    return preset_sound_btn("Play Random Music", on_click=play_random_music, icon=ft.Icons.QUEUE_MUSIC)
 
 def random_sfx_btn(
     audio: AudioManager, page: ft.Page, safe: bool,
     overlap: bool = True, snackbar: bool = False,
-    callbacks: list[Callable[[ft.ControlEvent], None]] | None = None,
+    callbacks: list[Callable[[], None]] | None = None,
     alt_sfx: list[Sound] = None
-):
+)-> ft.ElevatedButton:
     """
-    A button that will play a randomly selected SFX in the `SFX` enum class
+    A button that will play a randomly selected SFX in the `SFX` Enum class.
 
     Args:
-        audio (AudioManager): `AudioManager` instance
-        overlap (bool): Whether the SFX can overlap
-        snackbar (bool): Whether to display a snackbar notif on what SFX is being played
-        callbacks (list): A list of callbacks that takes a `ControlEvent` and retuns `None` if you want to add more function calls
-        page (Page): `Page` instance; only provide if snackbar is `True`
-        safe (bool): Enable to exclude playing explicit SFX (only works if `alt_sfx` is not `None`)
+        audio (AudioManager): The `AudioManager` instance.
+        page (Page): The `Page` instance; only provide if snackbar is `True`.
+        safe (bool): Enable to exclude playing explicit SFX (only works if `alt_sfx` is provided).
+        overlap (bool): Whether the SFX can overlap.
+        snackbar (bool): Whether to display a snackbar notif on what SFX is being played.
+        callbacks (list): A list of callbacks that retuns `None` if you want to add more function calls.
+        alt_sfx (list): A list of alternate `Sound` to choose from when `safe` is `True`.
 
     Returns:
-        `ElevatedButton`: A premade button for playing random SFX
+        `ElevatedButton`: A premade button for playing random SFX.
     """
     def play_random_sfx(_):
         rnd_sfx: SFX = None
@@ -200,8 +230,7 @@ def random_sfx_btn(
                 raise ValueError("alt_sfx cannot be None, and must be a list of Sound")
         
         if snackbar and page:
-            snackbar_text = ft.Text(f"Playing SFX: {rnd_sfx.value.title}")
-            page.open(ft.SnackBar(snackbar_text, duration=1000))
+            page.open(simple_popup(f"Playing SFX: {rnd_sfx.value.title}"))
             page.update()
             
         if callbacks is None:
@@ -209,4 +238,63 @@ def random_sfx_btn(
         for cb in callbacks:
             cb(_)
         
-    return ft.ElevatedButton("Play Random SFX", on_click=play_random_sfx)
+    return preset_sound_btn("Play Random SFX", on_click=play_random_sfx, icon=ft.Icons.QUEUE_MUSIC)
+
+def sfx_btn(
+    audio: AudioManager, page: ft.Page, sfx: SFX,
+    overlap: bool = True, snackbar: bool = False,
+    callbacks: list[Callable[[], None]] | None = None
+)-> ft.ElevatedButton:
+    """
+    A button that will play the given SFX in the `SFX` Enum class.
+
+    Args:
+        audio (AudioManager): The `AudioManager` instance.
+        page (Page): The `Page` instance; only provide if snackbar is `True`.
+        sfx (SFX): The `SFX` to be played.
+        overlap (bool): Whether the SFX can overlap.
+        snackbar (bool): Whether to display a snackbar notif on what SFX is being played.
+        callbacks (list): A list of callbacks that retuns `None` if you want to add more function calls.
+
+    Returns:
+        `ElevatedButton`: A premade button for playing a specific SFX.
+    """
+    def play_sfx(_):
+        audio.play_sfx(sfx, overlap=overlap)
+        
+        if snackbar and page:
+            page.open(simple_popup(f"Playing SFX: {sfx.value.title}"))
+            page.update()
+            
+        if callbacks is None:
+            return
+        for cb in callbacks:
+            cb(_)
+        
+    return preset_sound_btn(text=sfx.value.title, on_click=play_sfx, data=sfx, icon=ft.Icons.MUSIC_NOTE)
+
+def music_btn(
+    audio: AudioManager, music: Music, loop: bool = True,
+    callbacks: list[Callable[[], None]] | None = None
+)-> ft.ElevatedButton:
+    """
+    A button that will play the given music in the `Music` Enum class.
+
+    Args:
+        audio (AudioManager): The `AudioManager` instance.
+        music (Music): The `Music` to be played.
+        loop (bool): Whether the music will loop once finished playing.
+        callbacks (list): A list of callbacks that retuns `None` if you want to add more function calls.
+
+    Returns:
+        `ElevatedButton`: A premade button for playing specific music.
+    """
+    def play_music(_):
+        audio.play_music(music, loop=loop)
+        
+        if callbacks is None:
+            return
+        for cb in callbacks:
+            cb(_)
+    
+    return preset_sound_btn(text=music.value.title, on_click=play_music, data=music, icon=ft.Icons.LIBRARY_MUSIC)

@@ -3,9 +3,10 @@ import flet as ft
 import flet_audio as fa
 
 from enum import Enum
-from typing import Callable
-from .utilities import format_ms, check_audio
-from .file_declarations import SFX, Music
+from typing import Callable, List, Tuple
+from pathlib import Path
+from .utilities import format_ms
+from .file_declarations import SFX, Music, Sound
 from .storage import Storage
 
 
@@ -15,8 +16,6 @@ class DEFAULTS(Enum):
     SEEK = 3.0
     SAFE = True
 
-
-check_audio()
 
 class AudioManager:
     """
@@ -54,18 +53,17 @@ class AudioManager:
         if self.sfx and not overlap:
             self.sfx.release()
             self.page.overlay.remove(self.sfx)
-            if self.debug:
-                print(f"{self.name} Overriding SFX")
+            self._debug_msg(f"{self.name} Overriding SFX")
         
         def on_state_changed(e: fa.AudioStateChangeEvent):
-            if self.debug:
-                print(f"SFX State: {audio.value.title} -> {e.data}")
+            self._debug_msg(f"{self.name} SFX State: {audio.value.title} -> {e.data}")
+            
             if e.data == "stopped":
                 self._cleanup_sfx(e.control)
                 
         def on_loaded(_):
-            if self.debug:
-                print(f"SFX Loaded: {audio.value.title}")
+            self._debug_msg(f"{self.name} SFX Loaded: {audio.value.title}")
+            
             if self.on_loaded is not None:
                 self.on_loaded()
         
@@ -85,7 +83,7 @@ class AudioManager:
             self.page.overlay.remove(sfx)
             self.page.update()
         else:
-            print(f"Warning: Tried to remove SFX not in overlay: {sfx.src}")
+            self._debug_msg(f"{self.name} Warning: Tried to remove SFX not in overlay: {sfx.src}")
 
     # ---------- MUSIC ----------
     def play_music(self, audio: Music, loop: bool = False):
@@ -99,19 +97,19 @@ class AudioManager:
         if self.music:
             self.music.release()
             self.page.overlay.remove(self.music)
-            if self.debug:
-                print(f"{self.name} Overriding Music")
+            
+            self._debug_msg(f"{self.name} Overriding Music")
             
         def on_loaded(_):
-            if self.debug:
-                print(f"{self.name} Music Loaded: {audio.value.title}")
+            self._debug_msg(f"{self.name} Music Loaded: {audio.value.title}")
+                
             if self.on_loaded is not None:
                 self.on_loaded()
                 
         def on_state_changed(e: fa.AudioStateChangeEvent):
-            if self.debug:
-                loop_text = " (Looping)" if loop else ""
-                print(f"{self.name} Music State: {audio.value.title} -> {e.state.name}" + loop_text)
+            loop_text = " (Looping)" if loop else ""
+            self._debug_msg(f"{self.name} Music State: {audio.value.title} -> {e.state.name}" + loop_text)
+            
             if (e.data == "completed" and loop):
                 print(f"{self.name} Looping music...")
                 self.play_music(audio, loop)
@@ -149,13 +147,13 @@ class AudioManager:
             self.music = None
             self.page.update()
             print(f"{self.name} Stopping music")
-            
+
+    # ---------- GENERAL ----------
     def stop_all(self):
         """Stops all loaded `Audio` instances in `AudioManager`."""
         self.stop_music()
         self._cleanup_sfx()
-
-    # ---------- GENERAL ----------
+    
     def _perceptual_volume(self, ui_volume: float) -> float:
         """Convert linear UI volume (0.0-1.0) into a perceptual/logarithmic scale."""
         ui_volume = max(0.0001, min(1.0, ui_volume))  # clamp
@@ -176,8 +174,7 @@ class AudioManager:
             self.sfx.volume = scaled_volume
             self.sfx.update()
 
-        if self.debug:
-            print(f"[AudioManager | DEBUG] Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
+        self._debug_msg(f"{self.name} Volume set: UI={volume:.2f}, Scaled={scaled_volume:.4f}")
             
     def set_balance(self, balance: float):
         """Sets balance to either `Music` or `SFX`."""
@@ -188,18 +185,15 @@ class AudioManager:
             self.sfx.balance = balance
             self.sfx.update()
             
-        if self.debug:
-            print(f"{self.name} Balance set: {balance:.2f}")
+        self._debug_msg(f"{self.name} Balance set: {balance:.2f}")
             
     def seek(self, seek: int):
         """Seeks music for `seek` amount of milliseconds."""
         if self.music:
             self.music.seek(seek)
-            if self.debug:
-                print(f"{self.name} Seeking music at {seek}ms ({format_ms(seek)}s)")
+            self._debug_msg(f"{self.name} Seeking music at {seek}ms ({format_ms(seek)}s)")
         else:
-            if self.debug:
-                print(f"{self.name} No music to seek")
+            self._debug_msg(f"{self.name} No music to seek")
             
     def get_duration(self) -> int | None:
         """Gets the duration of the current song, which can either be `int` or `None`."""
@@ -207,9 +201,8 @@ class AudioManager:
         
         if self.music:
             duration = self.music.get_duration()
-        if self.debug:
-            debug_msg = f"{self.name} Current song duration: {duration}" if duration is not None else f"{self.name} No music playing"
-            print(debug_msg)
+            
+        self._debug_msg(f"{self.name} Current song duration: {duration}" if duration is not None else f"{self.name} No music playing")
             
         return duration
     
@@ -219,12 +212,67 @@ class AudioManager:
         
         if self.music:
             position = self.music.get_current_position()
-        if self.debug:
-            debug_msg = f"{self.name} Current song timestamp: {position}" if position is not None else f"{self.name} No music playing"
-            print(debug_msg)
+            
+        self._debug_msg(f"{self.name} Current song timestamp: {position}" if position is not None else f"{self.name} No music playing")
             
         return position
+    
+    # ---------- SETUP ----------
+    def _debug_msg(self, msg: str) -> None:
+        if self.debug:
+            print(msg)
+    
+    def generate_non_explicits(self) -> Tuple[List[Sound], List[Sound]]:
+        """
+        Generates lists of `Audio` excluding those tagged as `explicit=`True`.`
         
+        Returns:
+            Tuple: A tuple of lists, containing `Sound`, two of which are `safe_sfx` and `safe_music`.
+        """
+        safe_sfx = []
+        safe_music = []
+        
+        print("Generating safe_sfx")
+        for sfx in SFX:
+            if (not sfx.value.explicit):
+                safe_sfx.append(sfx)
+        print(f"{self.name} Finished generation. Original size: {len(SFX)} -> New size: {len(safe_sfx)}\n")
+        
+        print("Generating safe_music")
+        for music in Music:
+            if (not music.value.explicit):
+                safe_music.append(music)
+        print(f"{self.name} Finished generation. Original size: {len(Music)} -> New size: {len(safe_music)}\n")
+        
+        return safe_sfx, safe_music
+    
+    def validate(self):
+        """Checks integrity of all audio files."""
+        sfx_count = 0
+        music_count = 0
+        
+        print(f"\n{self.name} Checking registered SFX...")
+        for sfx in SFX:
+            if Path(sfx.value.str_path).exists():
+                print(f"{self.name} {sfx.name}: {sfx.value.str_path}")
+                sfx_count += 1
+            else:
+                print(f"{self.name} SFX {sfx.name} does not exist at {sfx.value.str_path}!")
+        print(f"{self.name} Found {sfx_count}/{len(SFX)} SFX files\n")
+
+        print(f"\n{self.name} Checking registered Music...")
+        for music in Music:
+            if Path(music.value.str_path).exists():
+                print(f"{self.name} {music.name}: {music.value.str_path}")
+                music_count += 1
+            else:
+                print(f"{self.name} Music {music.name} does not exist at {music.value.str_path}!")
+        print(f"{self.name} Found {music_count}/{len(Music)} Music files\n")
+
+        if sfx_count == len(SFX) and music_count == len(Music):
+            print(f"{self.name} ✅ All sound files are fully registered!\n")
+        else:
+            print(f"{self.name} ⚠️ Some files are missing.\n")
 
 '''
 Example usage with Flet
