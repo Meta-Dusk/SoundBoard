@@ -60,15 +60,11 @@ class AudioApp:
         self.page.remove(loading_control)
 
     def _setup_ui(self):
+        self.page.controls.clear()
         self.media_label = ft.Text(DEFAULTS.MEDIA_LABEL.value, size=20, color=ft.Colors.PRIMARY)
         self.media_desc = ft.Text(DEFAULTS.MEDIA_DESC.value, size=14, color=ft.Colors.SECONDARY)
         self.media_seek = ft.Text(DEFAULTS.MEDIA_SEEK.value, size=16, color=ft.Colors.SECONDARY, offset=ft.Offset(0, -0.1))
         
-        self.mobile_dev_btn = ft.IconButton(
-            on_click=self._change_orientation,
-            adaptive=True,
-            icon=ft.Icons.STAY_CURRENT_LANDSCAPE
-        )
         self.pause_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW, on_click=self._on_pause, disabled=True)
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP, on_click=self._on_stop, disabled=True)
         
@@ -110,15 +106,19 @@ class AudioApp:
             )], elevation=8, visible=self.show_audio_settings
         )
         
-        explicit_content_label = f"{'Enable' if self.safe else 'Disable'} Explicit Content"
-        self.settings_menu_button = ft.PopupMenuButton(items=[
-            ft.PopupMenuItem(text=explicit_content_label, icon=ft.Icons.MODE, on_click=self._toggle_explicit_content),
-            ft.PopupMenuItem(text="Overlapping SFX", icon=ft.Icons.SPEAKER_GROUP, checked=self.overlap_sfx, on_click=self._toggle_overlap_sfx),
-            ft.PopupMenuItem(text="Show Audio Settings", icon=ft.Icons.SETTINGS, checked=self.show_audio_settings, on_click=self._toggle_audio_settings),
-            ft.PopupMenuItem(text="Loop Music", icon=ft.Icons.LOOP, checked=self.loop_music, on_click=self._toggle_loop_music)
-        ])
-        
         if self.page.platform == ft.PagePlatform.WINDOWS:
+            self.mobile_dev_btn = ft.IconButton(
+                on_click=self._change_orientation,
+                adaptive=True,
+                icon=ft.Icons.STAY_CURRENT_LANDSCAPE
+            )
+            explicit_content_label = f"{'Enable' if self.safe else 'Disable'} Explicit Content"
+            self.settings_menu_button = ft.PopupMenuButton(items=[
+                ft.PopupMenuItem(text=explicit_content_label, icon=ft.Icons.MODE, on_click=self._toggle_explicit_content),
+                ft.PopupMenuItem(text="Overlapping SFX", icon=ft.Icons.SPEAKER_GROUP, checked=self.overlap_sfx, on_click=self._toggle_overlap_sfx),
+                ft.PopupMenuItem(text="Show Audio Settings", icon=ft.Icons.SETTINGS, checked=self.show_audio_settings, on_click=self._toggle_audio_settings),
+                ft.PopupMenuItem(text="Loop Music", icon=ft.Icons.LOOP, checked=self.loop_music, on_click=self._toggle_loop_music)
+            ])
             self.page.appbar.actions.insert(0, self.mobile_dev_btn)
             self.page.appbar.actions.insert(1, self.settings_menu_button)
         
