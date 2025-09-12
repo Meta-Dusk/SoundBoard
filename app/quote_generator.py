@@ -45,7 +45,6 @@ class QuoteApp:
         else:
             base_page(self._page, storage=self._storage)
         mobile_appbar(self._page, storage=self._storage)
-        self._page.padding = 20
 
     def _setup_ui(self):
         self._page.controls.clear()
@@ -117,10 +116,10 @@ class QuoteApp:
         self._page.update()
     
     def _exit_to_main(self, _):
-        return
         print("Going back to main_app...")
         self._page.controls.clear()
         self._page.appbar.actions.clear()
+        self._page.go("/")
         print("Finished setup for main_app.")
     
     # Quote Functions

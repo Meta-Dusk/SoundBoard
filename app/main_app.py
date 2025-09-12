@@ -226,10 +226,10 @@ class AudioApp:
     
     # Button Functions
     def _open_quote_generator(self, _):
-        return
         print("Opening Motivational Quote Generator...")
         self._page.controls.clear()
         self._page.appbar.actions.clear()
+        self._page.go("/quotes")
         print("Finished loading Motivational Quote Generator!")
     
     def _on_pause(self, _):
