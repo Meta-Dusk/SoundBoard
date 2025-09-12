@@ -1,6 +1,6 @@
 # Flet
 flet>=0.28.3
 flet_audio>=0.1.0
-requests>=2.32.4
+requests>=2.32.5
 
 # Installed with: pipreqs . --force --ignore build,tools,__pycache__ --encoding=utf-8
