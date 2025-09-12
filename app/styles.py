@@ -9,6 +9,9 @@ class DEFAULTS(Enum):
     THEME_MODE = "dark"
 
 
+def hor_div():
+    return ft.Divider(height=5, leading_indent=5, trailing_indent=5)
+
 def base_page(page: ft.Page, always_center: bool = True, storage: Storage | None = None) -> None:
     """The base page settings, with adaptive properties based on `platform`."""
     page.title = "SeBored"
