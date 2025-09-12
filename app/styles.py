@@ -19,7 +19,7 @@ def base_page(page: ft.Page, always_center: bool = True, storage: Storage | None
         value = storage.get(DEFAULTS.THEME_MODE)
         page.theme_mode = ft.ThemeMode[value]
     else:
-        page.theme_mode = ft.ThemeMode[DEFAULTS.THEME_MODE.value]
+        page.theme_mode = ft.ThemeMode.DARK
     if page.platform == ft.PagePlatform.WINDOWS or ft.PagePlatform.LINUX:
         page.window.resizable = False
         page.window.maximizable = False

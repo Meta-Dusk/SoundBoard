@@ -56,7 +56,7 @@ class AudioManager:
             self._debug_msg(f"{self.name} Overriding SFX")
         
         def on_state_changed(e: fa.AudioStateChangeEvent):
-            self._debug_msg(f"{self.name} SFX State: {audio.value.title} -> {e.data}")
+            self._debug_msg(f"{self.name} SFX State: {audio.value.title} -> {e.data} ({"not overlapping" if not overlap else "overlapping"})")
             
             if e.data == "stopped":
                 self._cleanup_sfx(e.control)

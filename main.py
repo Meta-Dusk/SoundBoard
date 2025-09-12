@@ -25,6 +25,7 @@ def main(page: ft.Page):
     safe: bool = True
     overlap_sfx: bool = True
     show_audio_settings: bool = True
+    loop_music: bool = True
     
     # Setup - Instances
     audio = AudioManager(page)
@@ -36,6 +37,12 @@ def main(page: ft.Page):
     else:
         base_page(page, storage=storage)
     mobile_appbar(page, storage=storage)
+    
+    loading_control = default_column([
+        ft.Text("Loading SeBored...", text_align=ft.TextAlign.CENTER, size=20),
+        ft.ProgressRing(width=200, height=200, stroke_width=5, padding=20)
+    ])
+    page.add(loading_control)
     
     # Audio Setups
     safe_sfx, safe_music = audio.generate_non_explicits()
@@ -101,10 +108,6 @@ def main(page: ft.Page):
         audio_slider.value = 0
         
         update_components()
-        
-    def on_resized(_):
-        update_components()
-        mv_slider.update()
     
     def change_orientation(_):
         nonlocal landscape
@@ -159,9 +162,18 @@ def main(page: ft.Page):
         print(msg)
         page.open(notif_dialog(title="Audio Settings", content=msg))
         page.update()
-    
-    page.on_resized = on_resized
-    page.auto_scroll = True
+        
+    def toggle_loop_music(e: ft.ControlEvent):
+        nonlocal loop_music
+        
+        loop_music = not loop_music
+        msg = f"Music is {"now looping" if loop_music else "no longer looping"}."
+        toggle_item: ft.PopupMenuItem = e.control
+        toggle_item.checked = loop_music
+        
+        print(msg)
+        page.open(notif_dialog(title="Music Settings", content=msg))
+        page.update()
     
     media_label = ft.Text(DEFAULTS.MEDIA_LABEL.value, size=20, color=ft.Colors.PRIMARY)
     media_desc = ft.Text(DEFAULTS.MEDIA_DESC.value, size=14, color=ft.Colors.SECONDARY)
@@ -174,8 +186,8 @@ def main(page: ft.Page):
     )
     pause_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW, on_click=on_pause, disabled=True)
     stop_btn = ft.IconButton(icon=ft.Icons.STOP, on_click=on_stop, disabled=True)
-    rnd_sfx_btn = random_sfx_btn(audio, page, safe, snackbar=True, alt_sfx=safe_sfx, overlap=overlap_sfx)
-    rnd_music_btn = random_music_btn(audio, page, safe, callbacks=[music_btn_pressed], alt_music=safe_music)
+    rnd_sfx_btn = random_sfx_btn(audio=audio, page=page, safe=safe, snackbar=True, alt_sfx=safe_sfx, overlap=overlap_sfx)
+    rnd_music_btn = random_music_btn(audio=audio, safe=safe, loop=loop_music, callbacks=[music_btn_pressed], alt_music=safe_music)
     
     mv_slider = master_volume_slider(audio, page, storage)
     mv_slider.padding = 5
@@ -189,12 +201,12 @@ def main(page: ft.Page):
         alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.CENTER
     )
     for sfx in SFX:
-        temp_btn = sfx_btn(audio, page, sfx, overlap_sfx, snackbar=True)
+        temp_btn = sfx_btn(audio=audio, page=page, sfx=sfx, overlap=overlap_sfx, snackbar=True)
         if sfx.value.explicit:
             temp_btn.disabled = safe
         button_controls.controls.append(temp_btn)
     for music in Music:
-        temp_btn = music_btn(audio, music, loop=True)
+        temp_btn = music_btn(audio=audio, music=music, loop=loop_music, callbacks=[music_btn_pressed])
         if music.value.explicit:
             temp_btn.disabled = safe
         button_controls.controls.append(temp_btn)
@@ -221,22 +233,12 @@ def main(page: ft.Page):
     )
     
     explicit_content_label = f"{"Enable" if safe else "Disable"} Explicit Content"
-    settings_menu_button = ft.PopupMenuButton(
-        items=[
-            ft.PopupMenuItem(
-                text=explicit_content_label,
-                on_click=toggle_explicit_content, icon=ft.Icons.MODE
-            ),
-            ft.PopupMenuItem(
-                text="Overlapping SFX", icon=ft.Icons.SPEAKER_GROUP, checked=overlap_sfx,
-                on_click=toggle_overlap_sfx
-            ),
-            ft.PopupMenuItem(
-                text="Show Audio Settings", icon=ft.Icons.SETTINGS, checked=show_audio_settings,
-                on_click=toggle_audio_settings
-            )
-        ]
-    )
+    settings_menu_button = ft.PopupMenuButton(items=[
+        ft.PopupMenuItem(text=explicit_content_label, icon=ft.Icons.MODE, on_click=toggle_explicit_content),
+        ft.PopupMenuItem(text="Overlapping SFX", icon=ft.Icons.SPEAKER_GROUP, checked=overlap_sfx, on_click=toggle_overlap_sfx),
+        ft.PopupMenuItem(text="Show Audio Settings", icon=ft.Icons.SETTINGS, checked=show_audio_settings, on_click=toggle_audio_settings),
+        ft.PopupMenuItem(text="Loop Music", icon=ft.Icons.LOOP, checked=loop_music, on_click=toggle_loop_music)
+    ])
     
     if (page.platform == ft.PagePlatform.WINDOWS):
         page.appbar.actions.insert(0, mobile_dev_btn)
@@ -255,6 +257,7 @@ def main(page: ft.Page):
     
     draggable_form = ft.Container(ft.WindowDragArea(form, maximizable=False), expand=True)
     
+    page.remove(loading_control)
     page.add(draggable_form)
 
 

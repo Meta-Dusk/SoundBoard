@@ -177,11 +177,9 @@ def random_music_btn(
     """
     def play_random_music(_):
         if not safe:
-            print("Explicit content enabled")
             audio.play_music(audio=random.choice(list(Music)), loop=loop)
         else:
             if alt_music is not None:
-                print("Explicit content disabled")
                 audio.play_music(audio=random.choice(alt_music), loop=loop)
             else:
                 raise ValueError("alt_music cannot be None, and must be a list of Sound")
@@ -218,12 +216,10 @@ def random_sfx_btn(
         rnd_sfx: SFX = None
         
         if not safe:
-            print("Explicit content enabled")
             rnd_sfx = random.choice(list(SFX))
             audio.play_sfx(rnd_sfx, overlap=overlap)
         else:
             if alt_sfx is not None:
-                print("Explicit content disabled")
                 rnd_sfx = random.choice(alt_sfx)
                 audio.play_sfx(rnd_sfx, overlap=overlap)
             else:
@@ -243,7 +239,8 @@ def random_sfx_btn(
 def sfx_btn(
     audio: AudioManager, page: ft.Page, sfx: SFX,
     overlap: bool = True, snackbar: bool = False,
-    callbacks: list[Callable[[], None]] | None = None
+    callbacks: list[Callable[[], None]] | None = None,
+    disabled: bool = False
 )-> ft.ElevatedButton:
     """
     A button that will play the given SFX in the `SFX` Enum class.
@@ -260,6 +257,7 @@ def sfx_btn(
         `ElevatedButton`: A premade button for playing a specific SFX.
     """
     def play_sfx(_):
+        print(f"Playing {"overlapping SFX!" if overlap else "NOT overlapping SFX!"}")
         audio.play_sfx(sfx, overlap=overlap)
         
         if snackbar and page:
@@ -271,7 +269,7 @@ def sfx_btn(
         for cb in callbacks:
             cb(_)
         
-    return preset_sound_btn(text=sfx.value.title, on_click=play_sfx, data=sfx, icon=ft.Icons.MUSIC_NOTE)
+    return preset_sound_btn(text=sfx.value.title, on_click=play_sfx, data=sfx, icon=ft.Icons.MUSIC_NOTE, disabled=disabled)
 
 def music_btn(
     audio: AudioManager, music: Music, loop: bool = True,

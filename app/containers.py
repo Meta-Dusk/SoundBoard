@@ -3,12 +3,12 @@ import flet as ft
 from typing import Sequence
 
 
-def default_column(controls: Sequence[ft.Control], expand: bool | int = True):
+def default_column(controls: Sequence[ft.Control], expand: bool | int = True, spacing: ft.OptionalNumber = None):
     return ft.Column(
         controls=controls,
         alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        expand=expand, adaptive=True
+        expand=expand, adaptive=True, spacing=spacing
     )
     
 def default_row(controls: Sequence[ft.Control], expand: bool | int = True):
